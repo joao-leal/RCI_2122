@@ -10,29 +10,48 @@
 
 //Functions Definition
 void New(); //Creates a new ring with only 1 knot
-void Bentry(int boot, char *IP, char *Port);
+void Bentry(int boot, char *IP, char *Port); //Enters a new knot ?
+void Pentry(int pred, char *pred_IP, char *pred_Port); // Enters a new knot knowing its predecessor
+void Chord(int i, char *i_IP, char *i_Port);
+void Echord();
+void Show();
+void Find(int k);
+void Leave();
 
 
-int main(void)
+
+
+int main(int argc, char * argv[])
 {
 
-    char command;
+    char key[3], i_ip[38], i_Port[5], command[128];
+
+
+    strcpy(key, argv[1]);
+    strcpy(i_ip, argv[2]);
+    strcpy(i_Port, argv[3]);
+
+    puts(argv[2]);
+    puts(i_ip);
+
+    printf("KEY: %s\nIP: %s : %s\n", key, i_ip, i_Port);
 
     while(1){
 
-        scanf("%c", &command);
+        scanf("%s", command);
+        printf("THIS: %s\n", command);
 
-        printf("THIS: %c\n", command);
+        if(strcmp("new", command) == 0)
+            New();
 
-        switch (command)
+        else if(strcmp("exit", command) == 0)
         {
-        case 'e':
+            printf("EXITING\n");
             exit(0);
-            break;
-        
-        default:
-            break;
         }
+            
+
+
 
 
 
@@ -41,6 +60,12 @@ int main(void)
     exit(0);
 }
 
+
+void New()
+{
+
+    printf("CREATING NEW RING...\n");
+}
 
 
 
