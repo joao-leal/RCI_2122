@@ -27,15 +27,16 @@ int main(int argc, char * argv[])
 
     while(1){
 
+        printf("Waiting for input:\n");
         scanf("%s", command);
         printf("THIS: %s\n", command);
 
         if(!strcmp("new", command) || !strcmp("n", command))
-            New();
+            New(); //Creates a new ring with 1 knot
 
         else if(!strcmp("bentry", command) || !strcmp("b", command))
         {
-            Bentry(key, i_IP, i_Port);
+            Bentry(key, i_IP, i_Port); //asks the server (key, i_IP, i_Port) to enter the ring
         }
         else if(!strcmp("exit", command) || !strcmp("e", command))
         {
@@ -44,18 +45,12 @@ int main(int argc, char * argv[])
         }
 
 
-    }    
+    }
 
     exit(0);
 }
 
-//Creates a new ring with 1 knot
 
-
-void Bentry(int boot, char *boot_IP, char *boot_Port)
-{
-    printf("Doing something with:\n key: %d\nIP: %s\nPort: %s", boot, boot_IP, boot_Port);
-}
 
 
 
