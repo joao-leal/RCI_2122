@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "ring.h"
 
 int main(int argc, char * argv[])
@@ -9,13 +5,14 @@ int main(int argc, char * argv[])
 
     short key;
     char i_IP[16] = "", i_Port[6] = "", command[128] = "";
+    knot host;
 
 
     key = atoi(argv[1]);
     if(key > 32 || key < 1)
     {
-        printf("Key must be between 1 and 32");
-        exit(-1);
+        printf("Key must be between 1 and 32\n");
+        exit(1);
     }
 
     strcpy(i_IP, argv[2]);
@@ -25,17 +22,22 @@ int main(int argc, char * argv[])
 
     printf("KEY: %d\nIP: %s:%s\n", key, i_IP, i_Port);
 
+    //User Interface
     while(1){
 
         scanf("%s", command);
         printf("THIS: %s\n", command);
 
         if(!strcmp("new", command) || !strcmp("n", command))
-            New();
+            New(&host, key, i_IP, i_Port);
 
         else if(!strcmp("bentry", command) || !strcmp("b", command))
         {
             Bentry(key, i_IP, i_Port);
+        }
+        else if(!strcmp("pentry", command) || !strcmp("p", command))
+        {
+            Pentry(key, i_IP, i_Port);
         }
         else if(!strcmp("exit", command) || !strcmp("e", command))
         {
@@ -49,13 +51,8 @@ int main(int argc, char * argv[])
     exit(0);
 }
 
-//Creates a new ring with 1 knot
 
 
-void Bentry(int boot, char *boot_IP, char *boot_Port)
-{
-    printf("Doing something with:\n key: %d\nIP: %s\nPort: %s", boot, boot_IP, boot_Port);
-}
 
 
 

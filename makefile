@@ -5,10 +5,10 @@ CFLAGS2=-Wall -std=c99 -O3
 
 
 #   Sources
-SOURCES = ring.c ring_server.c
+SOURCES = ring.c ring_interface.c net.c
 
 #   Objects  ('Make' automatically compiles .c to .o)
-OBJECTS_A = ring.o ring_server.o
+OBJECTS_A = ring.o ring_interface.o net.o
 
 
 .c.o:
