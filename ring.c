@@ -1,42 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netdb.h>
 #include <string.h>
-#include <unistd.h>
 
-
-
-//Functions Definition
-void New(); //Creates a new ring with only 1 knot
-void Bentry(int boot, char *IP, char *Port); //Enters a new knot ?
-void Pentry(int pred, char *pred_IP, char *pred_Port); // Enters a new knot knowing its predecessor
-void Chord(int i, char *i_IP, char *i_Port);
-void Echord();
-void Show();
-void Find(int k);
-void Leave();
-
-
-
+#include "ring.h"
 
 int main(int argc, char * argv[])
 {
 
-    char key[3], i_IP[16] = "", i_Port[6] = "", command[128] = "";
+    short key;
+    char i_IP[16] = "", i_Port[6] = "", command[128] = "";
 
 
-    strcpy(key, argv[1]);
-    if(key > 32 || key < 0)
+    key = atoi(argv[1]);
+    if(key > 32 || key < 1)
+    {
+        printf("Key must be between 1 and 32");
         exit(-1);
+    }
 
     strcpy(i_IP, argv[2]);
     i_IP[15] = '\0';
     strcpy(i_Port, argv[3]);
     i_Port[5] = '\0';
 
-    printf("KEY: %s\nIP: %s:%s\n", key, i_IP, i_Port);
+    printf("KEY: %d\nIP: %s:%s\n", key, i_IP, i_Port);
 
     while(1){
 
@@ -55,10 +42,6 @@ int main(int argc, char * argv[])
             printf("EXITING\n");
             exit(0);
         }
-            
-
-
-
 
 
     }    
@@ -66,16 +49,12 @@ int main(int argc, char * argv[])
     exit(0);
 }
 
+//Creates a new ring with 1 knot
 
-void New()
-{
-
-    printf("CREATING NEW RING...\n");
-}
 
 void Bentry(int boot, char *boot_IP, char *boot_Port)
 {
-
+    printf("Doing something with:\n key: %d\nIP: %s\nPort: %s", boot, boot_IP, boot_Port);
 }
 
 

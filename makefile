@@ -1,3 +1,24 @@
+#   Compiler, Compiler Flags
+CC = gcc
+CFLAGS1 =-g -Wall
+CFLAGS2=-Wall -std=c99 -O3
 
-ring: ring.c
-	gcc -Wall -g ring.c -o ring
+
+#   Sources
+SOURCES = ring.c ring_server.c
+
+#   Objects  ('Make' automatically compiles .c to .o)
+OBJECTS_A = ring.o ring_server.o
+
+
+.c.o:
+	$(CC) $(CFLAGS1) -c -o $@ $<
+
+ring: $(OBJECTS_A)
+	$(CC) $(CFLAGS1) -o $@ $(OBJECTS_A)
+
+ring_final: $(OBJECTS_A)
+	$(CC) $(CFLAGS2) -o $@ $(OBJECTS_A)
+
+clean:
+	rm -f *.o *.~ *.gch
