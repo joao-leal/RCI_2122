@@ -24,27 +24,33 @@ void Leave();
 int main(int argc, char * argv[])
 {
 
-    char key[3], i_ip[38], i_Port[5], command[128];
+    char key[3], i_IP[16] = "", i_Port[6] = "", command[128] = "";
 
 
     strcpy(key, argv[1]);
-    strcpy(i_ip, argv[2]);
+    if(key > 32 || key < 0)
+        exit(-1);
+
+    strcpy(i_IP, argv[2]);
+    i_IP[15] = '\0';
     strcpy(i_Port, argv[3]);
+    i_Port[5] = '\0';
 
-    puts(argv[2]);
-    puts(i_ip);
-
-    printf("KEY: %s\nIP: %s : %s\n", key, i_ip, i_Port);
+    printf("KEY: %s\nIP: %s:%s\n", key, i_IP, i_Port);
 
     while(1){
 
         scanf("%s", command);
         printf("THIS: %s\n", command);
 
-        if(strcmp("new", command) == 0)
+        if(!strcmp("new", command) || !strcmp("n", command))
             New();
 
-        else if(strcmp("exit", command) == 0)
+        else if(!strcmp("bentry", command) || !strcmp("b", command))
+        {
+            Bentry(key, i_IP, i_Port);
+        }
+        else if(!strcmp("exit", command) || !strcmp("e", command))
         {
             printf("EXITING\n");
             exit(0);
@@ -65,6 +71,11 @@ void New()
 {
 
     printf("CREATING NEW RING...\n");
+}
+
+void Bentry(int boot, char *boot_IP, char *boot_Port)
+{
+
 }
 
 
