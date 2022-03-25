@@ -1,4 +1,4 @@
 #include "ring.h"
 
 
-void newUDP(knot *);
+void newUDP_server(knot *);

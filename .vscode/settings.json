@@ -1,6 +1,8 @@
 {
     "files.associations": {
-        "unistd.h": "c"
+        "*.php": "php",
+        "unistd.h": "c",
+        "cstdlib": "cpp"
     },
     "C_Cpp.errorSquiggles": "Disabled"
 }

@@ -41,8 +41,8 @@ typedef struct
 
 //Functions Definition
 void New(knot *, short , char *, char *); //Creates a new ring with only 1 knot
-void Bentry(short, char *, char *); //Enters a new knot ?
-void Pentry(short, char *, char *); // Enters a new knot knowing its predecessor
+void Bentry(short *, char *, char *); //Enters a new knot ?
+void Pentry(short *, char *, char *); // Enters a new knot knowing its predecessor
 void Chord(short, char *, char *);
 void Echord();
 void Show();
