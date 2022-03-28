@@ -38,10 +38,12 @@ void newUDP_server(knot *k)
         if(nread == -1)
             exit(1);
 
-        //echo server
+        
         write(1, "received: ", 10);
         write(1, buffer, nread);
         write(1 , "\n", 1);
+
+        //echo server (sends only read bytes)
         n = sendto(fd, buffer, nread, 0, &addr, addrlen);
         if(n == -1)
             exit(1);

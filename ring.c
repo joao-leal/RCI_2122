@@ -4,7 +4,7 @@ int main(int argc, char * argv[])
 {
 
     short key;
-    char i_IP[16] = "", i_Port[6] = "", input[128] = "", command[12] = "";
+    char i_IP[16] = "", i_Port[6] = "";
     knot host;
 
 
@@ -25,7 +25,7 @@ int main(int argc, char * argv[])
     //User Interface
     while(1){
 
-        strcpy(input, ""); //clear buffer
+        char input[128] = "", command[12] = "";
         fgets(input, 128, stdin);
         sscanf(input, "%s", command);
         
@@ -40,7 +40,7 @@ int main(int argc, char * argv[])
             char boot_IP[16] = "", boot_Port[6] = "";
 
             sscanf(input, "%*s %hi %s %s", &boot, boot_IP, boot_Port);
-            // printf("BOOT: \t %d\nIP: \t %s\nPORT: \t %s\n", boot, boot_IP, boot_Port);
+            //printf("BOOT: \t %d\nIP: \t %s\nPORT: \t %s\n", boot, boot_IP, boot_Port);
 
             Bentry(&boot, boot_IP, boot_Port);
         }
