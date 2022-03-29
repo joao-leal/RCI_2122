@@ -18,7 +18,7 @@ void newUDP_server(knot *k)
 
     //Inicializes hints
     memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET; //ipv4
+    hints.ai_family = AF_INET; //IPv4
     hints.ai_socktype = SOCK_DGRAM; //UDP socket
     hints.ai_flags = AI_PASSIVE;
 
