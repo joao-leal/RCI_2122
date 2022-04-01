@@ -1,7 +1,6 @@
 #ifndef RING
 #define RING
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -36,16 +35,34 @@ typedef struct
     char succ_IP[IP_SIZE];
     char succ_Port[PORT_SIZE];
 
+    //Shortcut
+    short short_key;
+    char short_IP[IP_SIZE];
+    char short_Port[PORT_SIZE];
+
 } knot;
+
+
+typedef struct
+{
+    short knots;
+    short keys[32]; 
+
+
+} ring;
+
+
+// "\e[1;1H\e[2J" clears console
+
 
 
 //Functions Definition
 void New(knot *, short , char *, char *); //Creates a new ring with only 1 knot
-void Bentry(short *, char *, char *); //Enters a new knot ?
-void Pentry(short *, char *, char *); // Enters a new knot knowing its predecessor
+void Bentry(knot *, short *, char *, char *); //Enters a new knot ?
+void Pentry(knot *, short *, char *, char *); // Enters a new knot knowing its predecessor
 void Chord(short, char *, char *);
 void Echord();
-void Show();
+void Show(knot *);
 void Find(short k);
 void Leave();
 
