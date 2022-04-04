@@ -15,6 +15,7 @@
 #define RING_SIZE 32
 #define IP_SIZE 16
 #define PORT_SIZE 6
+#define max(A,B) ((A)>=(B)?(A):(B))
 
 
 //Knot Structure
@@ -23,22 +24,26 @@ typedef struct
     //Self
     short self_key;
     char self_IP[IP_SIZE];
-    char self_Port[PORT_SIZE];   
+    char self_Port[PORT_SIZE];
+    int fd_self;   
 
     //Predecessor
     short pred_key;
     char pred_IP[IP_SIZE];
     char pred_Port[PORT_SIZE];
+    int fd_pred;
 
     //Successor
     short succ_key;
     char succ_IP[IP_SIZE];
     char succ_Port[PORT_SIZE];
+    int fd_succ;
 
     //Shortcut
     short short_key;
     char short_IP[IP_SIZE];
     char short_Port[PORT_SIZE];
+    int fd_short;
 
 } knot;
 
@@ -47,7 +52,6 @@ typedef struct
 {
     short knots;
     short keys[32]; 
-
 
 } ring;
 

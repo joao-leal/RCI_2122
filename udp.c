@@ -31,7 +31,7 @@ int main(int argc, char * argv[])
 	while(1)
 	{
 		printf("Write your message (type q! to exit): ");
-		scanf("%s", message);
+		fgets(message, stdin);
 
 		if(!strcmp(message, "q!"))
 		{
