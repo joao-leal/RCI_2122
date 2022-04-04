@@ -2,4 +2,5 @@
 
 
 void newUDP_server(knot *);
-void newTCP(knot *);
+int newTCP(char *, char*);
+void closeTCP(int *);

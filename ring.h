@@ -13,7 +13,7 @@
 #include <signal.h>
 
 #define RING_SIZE 32
-#define IP_SIZE 16
+#define IP_SIZE 50
 #define PORT_SIZE 6
 #define max(A,B) ((A)>=(B)?(A):(B))
 

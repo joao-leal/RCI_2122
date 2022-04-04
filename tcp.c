@@ -1,5 +1,5 @@
 //tcp test
-#include "tcp.h"
+#include "net.h"
 
 int main(void) {
 
@@ -44,28 +44,5 @@ int main(void) {
 
 }
 
-int new_conection(char ip_in, char port_in){
-    struct addrinfo hints, *res;
-    int fd, n, errorcode;
 
-    //TCP socket and connect
-    fd = socket (AF_INET, SOCK_STREAM, 0);    //TCP socket
-    /*file descriptor print*/ printf("FD: %i \n", fd);
-    if (fd == -1) exit(1); //error
 
-    memset (&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET;    //IPv4
-    hints.ai_socktype = SOCK_STREAM;  //TCP socket
-
-    errorcode = getaddrinfo (ip_in, port_in, &hints, &res);
-    if (errorcode != 0) /*error*/ exit(1);
-
-    n = connect(fd, res->ai_addr, res->ai_addrlen);
-    if (n == -1) /*error*/ exit(1);
-
-    return (fd);
-}
-
-void close_conection (int *fd){
-    close(*fd);
-}
