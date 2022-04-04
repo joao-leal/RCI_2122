@@ -57,3 +57,7 @@ void newUDP_server(knot *k)
     close(fd);
 }
 
+void newTCP(knot *k)
+{
+    
+}

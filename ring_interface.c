@@ -56,7 +56,7 @@ void Pentry(knot *the_knot, short *pred, char *pred_IP, char *pred_Port)
 {
     //The entering knot has to send "SELF i i.IP i.port\n" to 'pred' via TCP
     short key;
-    char i_IP[IP_SIZE] = "", i_Port[PORT_SIZE] = "", message[128] = "";
+    char i_IP[IP_SIZE] = "", i_Port[PORT_SIZE] = "", self_m[128] = "";
 
     key = the_knot->self_key;
     strcpy(i_IP, the_knot->self_IP);
@@ -67,8 +67,11 @@ void Pentry(knot *the_knot, short *pred, char *pred_IP, char *pred_Port)
     strcpy(the_knot->pred_IP, pred_IP);
     strcpy(the_knot->pred_Port, pred_Port);
 
-    sprintf(message, "SELF %d %s %s\n", key, i_IP, i_Port);
+    sprintf(self_m, "SELF %d %s %s\n", key, i_IP, i_Port);
 
     //Open TCP connection with predecessor
+    
+
+
 
 }
