@@ -71,6 +71,7 @@ void Pentry(knot *k, short *pred, char *pred_IP, char *pred_Port)
 
     //Open TCP connection with predecessor
     k->fd_pred = newTCP(k->pred_IP, k->pred_Port);
+    writeTCP();
     closeTCP(&k->fd_pred);
 
 

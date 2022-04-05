@@ -62,13 +62,11 @@ int newTCP(char *i_IP, char *i_Port)
     //short key_in;
     int fd, n, errorcode;
     struct addrinfo hints, *res;
-    ssize_t nbytes, nleft, nwritten, nread;
-    char *ptr, buffer[128+1];
 
     //TCP socket and connect
     fd = socket(AF_INET, SOCK_STREAM, 0);    //TCP socket
 
-    /*file descriptor print*/ printf("FD: %i \n", fd);
+    printf("FD: %i \n", fd); //file descriptor print
     if(fd == -1) exit(1); //error
 
     memset (&hints, 0, sizeof hints);
@@ -76,36 +74,48 @@ int newTCP(char *i_IP, char *i_Port)
     hints.ai_socktype = SOCK_STREAM;  //TCP socket
 
     errorcode = getaddrinfo(i_IP, i_Port, &hints, &res);
-    if (errorcode != 0) /*error*/ exit(1);
+    if (errorcode != 0) //error 
+        exit(1);
 
     n = connect(fd, res->ai_addr, res->ai_addrlen);
-    if (n == -1) /*error*/ exit(1);
+    if (n == -1) //error
+        exit(1);
 
-        ptr = strcpy(buffer, "Hello!\n");
-    nbytes = strlen(ptr);
-    printf("nbytes: %zd \n", nbytes);
-    nleft = nbytes;
 
-    while (nleft>0) {nwritten = write(fd, ptr, nleft);
-        if (nwritten <= 0) /*error*/ exit(1);
-        nleft -= nwritten;
-        ptr += nwritten;}
-    nleft = nbytes; ptr = buffer;
-
+/* 
     while (nleft > 0) {nread = read(fd, ptr, nleft);
-        if (nread == -1) /*error*/ exit(1);
-        else if (nread == 0) break; /*closed by peer*/
-        nleft -= nread;
-        ptr += nread;}
+    if (nread == -1) //error
+        exit(1);
+    else if (nread == 0) break; //closed by peer
+    nleft -= nread;
+    ptr += nread;}
 
     nread = nbytes - nleft;
 
     buffer [nread] = '\0';
     printf ("echo: %s\n", buffer);
-    printf("FD: %i", fd);
+    printf("FD: %i", fd); 
+*/
 
     return fd;
 
+}
+
+
+void writeTCP(int *fd, char *message)
+{
+    ssize_t nbytes, nleft, nwritten;
+
+    message = strcpy(buffer, "Hello!\n");
+    nbytes = strlen(ptr);
+    printf("nbytes: %zd \n", nbytes);
+    nleft = nbytes;
+
+    while (nleft>0) {nwritten = write(fd, ptr, nleft);
+    if (nwritten <= 0) /*error*/ exit(1);
+    nleft -= nwritten;
+    ptr += nwritten;}
+    nleft = nbytes; ptr = buffer;
 }
 
 void closeTCP (int *fd){
