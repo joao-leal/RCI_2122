@@ -13,8 +13,10 @@
 #include <signal.h>
 
 #define RING_SIZE 32
+#define COMMAND_LENGTH 16
 #define IP_SIZE 50
 #define PORT_SIZE 6
+#define MAX_MESSAGE_LENGTH 128
 #define max(A,B) ((A)>=(B)?(A):(B))
 
 
@@ -25,7 +27,6 @@ typedef struct
     short self_key;
     char self_IP[IP_SIZE];
     char self_Port[PORT_SIZE];
-    int fd_self;   
 
     //Predecessor
     short pred_key;
@@ -45,6 +46,11 @@ typedef struct
     char short_Port[PORT_SIZE];
     int fd_short;
 
+    //File Descriptors
+    int fd_listen;
+    int fd_UDP; 
+    int fd_aux;
+
 } knot;
 
 
@@ -55,8 +61,8 @@ typedef struct
 
 } ring;
 
-
-// "\e[1;1H\e[2J" clears console
+#include "net.h"
+//"\e[1;1H\e[2J" clears console
 
 
 

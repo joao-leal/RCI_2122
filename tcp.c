@@ -25,6 +25,7 @@ int main(void) {
         if (nwritten <= 0) /*error*/ exit(1);
         nleft -= nwritten;
         ptr += nwritten;}
+        
     nleft = nbytes; ptr = buffer;
 
     while (nleft > 0) {nread = read(fd, ptr, nleft);

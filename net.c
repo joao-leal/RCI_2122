@@ -1,7 +1,7 @@
 #include "net.h"
 
 
-void newUDP_server(knot *k)
+void newUDP(knot *k)
 {
     //Creates a new UDP server
     struct addrinfo hints, *res;
@@ -57,7 +57,7 @@ void newUDP_server(knot *k)
     close(fd);
 }
 
-int newTCP(char *i_IP, char *i_Port)
+int connectTCP(char *i_IP, char *i_Port)
 {
     //short key_in;
     int fd, n, errorcode;
@@ -105,17 +105,73 @@ int newTCP(char *i_IP, char *i_Port)
 void writeTCP(int *fd, char *message)
 {
     ssize_t nbytes, nleft, nwritten;
+    
 
-    message = strcpy(buffer, "Hello!\n");
-    nbytes = strlen(ptr);
+    nbytes = strlen(message);
     printf("nbytes: %zd \n", nbytes);
     nleft = nbytes;
 
-    while (nleft>0) {nwritten = write(fd, ptr, nleft);
-    if (nwritten <= 0) /*error*/ exit(1);
-    nleft -= nwritten;
-    ptr += nwritten;}
-    nleft = nbytes; ptr = buffer;
+    while (nleft>0) 
+    {
+        nwritten = write(*fd, message, nleft);
+        if (nwritten <= 0) /*error*/
+            exit(1);
+        nleft -= nwritten;
+        message += nwritten;
+    }
+
+}
+
+int listenTCP(char *Port)
+{
+    int fd=0, newfd=0, errorcode;
+    struct addrinfo hints, *res;
+
+    //TCP socket and connect
+    fd = socket(AF_INET, SOCK_STREAM, 0);//TCP socket
+
+    printf("FD: %i \n", fd); //file descriptor print
+    if(fd == -1) exit(1); //error
+
+    memset (&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;    //IPv4
+    hints.ai_socktype = SOCK_STREAM;  //TCP socket
+
+    errorcode = getaddrinfo(NULL, Port, &hints, &res);
+    if (errorcode != 0) //error 
+        exit(1);
+    
+    if(bind(fd,res->ai_addr,res->ai_addrlen)==-1)/*error*/
+        exit(1);
+    
+    if(!listen(newfd, MAX_BACKLOG))
+    {
+        exit(1);
+    }
+
+    freeaddrinfo(res);
+
+    return newfd;
+
+}
+
+int acceptTCP(int *fd_listen)
+{
+    int fd;
+    struct sockaddr addr;
+    socklen_t addrlen;
+
+    if((fd = accept(*fd_listen, &addr, &addrlen)) == -1)
+        exit(1);
+
+    printf("CONNECTED\n");
+
+    return fd;
+}
+
+void readTCP(int *fd, char *buffer)
+{
+    
 }
 
 void closeTCP (int *fd){

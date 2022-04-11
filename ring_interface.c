@@ -1,5 +1,4 @@
 #include "ring.h"
-#include "net.h"
 
 void New(knot *host, short i, char *i_IP, char *i_Port)
 {
@@ -15,7 +14,7 @@ void New(knot *host, short i, char *i_IP, char *i_Port)
 
     printf("CREATING NEW RING...\n");
     
-    newUDP_server(host);
+    newUDP(host);
        
     
 }
@@ -70,8 +69,8 @@ void Pentry(knot *k, short *pred, char *pred_IP, char *pred_Port)
     sprintf(self_m, "SELF %d %s %s\n", key, i_IP, i_Port);
 
     //Open TCP connection with predecessor
-    k->fd_pred = newTCP(k->pred_IP, k->pred_Port);
-    writeTCP();
+    k->fd_pred = connectTCP(k->pred_IP, k->pred_Port);
+    writeTCP(&k->fd_pred, self_m);
     closeTCP(&k->fd_pred);
 
 
