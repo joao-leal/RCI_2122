@@ -3,13 +3,13 @@
 int main(int argc, char * argv[])
 {
 
-    knot client_knot;
+    knot node;
     int max_fd = 0;
     fd_set read_fds;
     enum {idle, busy} state;
 
     //Initializes knot structure
-    memset(&client_knot, 0, sizeof(knot));
+    memset(&node, 0, sizeof(knot));
 
     //Prevents SIGPIPE Signal
     struct sigaction act;
@@ -18,21 +18,22 @@ int main(int argc, char * argv[])
     sigaction(SIGPIPE,&act,NULL);
 
 
-    client_knot.self_key = atoi(argv[1]);
-    if(client_knot.self_key > 32 || client_knot.self_key < 1)
+    node.self_key = atoi(argv[1]);
+    if(node.self_key > 32 || node.self_key < 1)
     {
         printf("Key must be within ring limits (1:32)\n");
         exit(1);
     }
 
-    strcpy(client_knot.self_IP, argv[2]);
-    strcpy(client_knot.self_Port, argv[3]);
+    strcpy(node.self_IP, argv[2]);
+    strcpy(node.self_Port, argv[3]);
 
-    printf("KEY: \t %d\nIP: \t %s\nPORT: \t %s\n", client_knot.self_key, client_knot.self_IP, client_knot.self_Port);
+    printf("KEY: \t %d\nIP: \t %s\nPORT: \t %s\n", node.self_key, node.self_IP, node.self_Port);
 
     //User Interface
     state = idle;
-    while(1){
+    while(1)
+    {
 
         char input[MAX_MESSAGE_LENGTH] = "", command[COMMAND_LENGTH] = "";
         int counter = 0;
@@ -46,9 +47,9 @@ int main(int argc, char * argv[])
             case idle:
 
             //Adds the file descriptors for TCP & UDP connections and for the STDIN
-                FD_SET(client_knot.fd_listen, &read_fds);
-                FD_SET(client_knot.fd_UDP, &read_fds);
-                max_fd = max(client_knot.fd_listen, client_knot.fd_UDP);
+                FD_SET(node.fd_listen, &read_fds);
+                FD_SET(node.fd_UDP, &read_fds);
+                max_fd = max(node.fd_listen, node.fd_UDP);
                 FD_SET(STDIN_FILENO, &read_fds);
                 max_fd = max(max_fd, STDIN_FILENO);
                 break;
@@ -82,7 +83,7 @@ int main(int argc, char * argv[])
                         if(!strcmp("new", command) || !strcmp("n", command))
                         {
                             printf("\e[1;1H\e[2J");
-                            New(&client_knot);
+                            New(&node);
                         }
 
                             
@@ -96,7 +97,7 @@ int main(int argc, char * argv[])
                             sscanf(input, "%*s %hi %s %s", &boot, boot_IP, boot_Port);
                             //printf("BOOT: \t %d\nIP: \t %s\nPORT: \t %s\n", boot, boot_IP, boot_Port);
 
-                            Bentry(&client_knot, &boot, boot_IP, boot_Port);
+                            Bentry(&node, &boot, boot_IP, boot_Port);
                         }
                         else if(!strcmp("pentry", command) || !strcmp("p", command))
                         {
@@ -105,12 +106,13 @@ int main(int argc, char * argv[])
 
                             sscanf(input, "%*s %hi %s %s", &pred, pred_IP, pred_Port);
                             printf("\e[1;1H\e[2J");
-                            Pentry(&client_knot, &pred, pred_IP, pred_Port);
+                            Pentry(&node, &pred, pred_IP, pred_Port);
+                            
                         }
                         else if(!strcmp("show", command) || !strcmp("s", command))
                         {
                             
-                            Show(&client_knot);
+                            Show(&node);
                             
                         }
                         else if(!strcmp("exit", command) || !strcmp("e", command))
@@ -125,17 +127,28 @@ int main(int argc, char * argv[])
                     /************************************/
 
                     //Incoming TCP request
-                    if(FD_ISSET(client_knot.fd_listen, &read_fds))
+                    if(FD_ISSET(node.fd_listen, &read_fds))
                     {
-                        if(client_knot.pred_key == 0) //Knot is not in ring
+                        if(node.pred_key == 0) //Knot is not in ring
                         {
-                            client_knot.fd_aux = acceptTCP(&client_knot.fd_listen);
-                            printf("ACCEPTED FD:\t%d\n", client_knot.fd_aux);
+                            node.fd_aux = acceptTCP(&node.fd_listen);
+                            printf("ACCEPTED FD:\t%d\n", node.fd_aux);
                         }
                         else
                         {
-                            client_knot.fd_aux = acceptTCP(&client_knot.fd_listen);
-                            printf("ACCEPTED FD:\t%d\n", client_knot.fd_aux);
+                            //Accept incoming request
+                            node.fd_aux = acceptTCP(&node.fd_listen);
+                            printf("ACCEPTED FD:\t%d\n", node.fd_aux);
+
+                            //There is something to be read
+                            char buffer[MAX_MESSAGE_LENGTH], retmsg[MAX_MESSAGE_LENGTH];
+
+                            readTCP(&node.fd_aux, buffer);
+                            printf("RECEIVED:\t%s\n", buffer);
+
+                            //We have to handle the message
+                            Msg_Handle(buffer, &node, retmsg);
+
                             
                         }
                     }

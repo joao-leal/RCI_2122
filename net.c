@@ -67,7 +67,6 @@ int connectTCP(char *i_IP, char *i_Port)
     //TCP socket and connect
     fd = socket(AF_INET, SOCK_STREAM, 0);    //TCP socket
 
-    printf("FD: %i \n", fd); //file descriptor print
     if(fd == -1) 
         exit(1); //error
 
@@ -125,7 +124,7 @@ void writeTCP(int *fd, char *message)
         nleft -= nwritten;
         message += nwritten;
     }
-
+    message -= nwritten;
 }
 
 int listenTCP(char *Port)
@@ -136,7 +135,6 @@ int listenTCP(char *Port)
     //TCP socket and connect
     fd = socket(AF_INET, SOCK_STREAM, 0);        //TCP socket
 
-    printf("FD: %i \n", fd);                     //file descriptor print
     if(fd == -1) exit(1);                        //error
 
     memset (&hints, 0, sizeof hints);
@@ -166,23 +164,30 @@ int listenTCP(char *Port)
 
 }
 
-int acceptTCP(int *fd_listen)
+int acceptTCP(int *fd)
 {
-    int fd;
+    int new_fd;
     struct sockaddr addr;
     socklen_t addrlen;
 
-    if((fd = accept(*fd_listen, &addr, &addrlen)) == -1)
+    if((new_fd = accept(*fd, &addr, &addrlen)) == -1)
         exit(1);
 
     printf("CONNECTED\n");
 
-    return fd;
+    return new_fd;
 }
 
 void readTCP(int *fd, char *buffer)
 {
-    
+    ssize_t nread;
+
+    nread = read(*fd, buffer, MAX_MESSAGE_LENGTH);
+    if(nread == -1) /*error*/
+        exit(1);
+    /* else if(nread == 0)
+        return; //closed by peer */ 
+        
 }
 
 void closeTCP (int *fd){

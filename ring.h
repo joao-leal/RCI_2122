@@ -79,5 +79,8 @@ void Show(knot *);
 void Find(short k);
 void Leave();
 
+void Msg_Create(char *, int, knot *);
+void Msg_Handle(char *, knot *, char *);
+
 
 #endif
