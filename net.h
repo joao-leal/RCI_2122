@@ -6,7 +6,7 @@
 
 #define MAX_BACKLOG 4
 
-void newUDP(knot *);
+int newUDP(knot *);
 int listenTCP(char *);
 int connectTCP(char *, char*);
 int acceptTCP(int *);

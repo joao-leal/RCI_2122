@@ -62,12 +62,15 @@ typedef struct
 } ring;
 
 #include "net.h"
-//"\e[1;1H\e[2J" clears console
 
+
+//"\e[1;1H\e[2J" clears console
+// 94.62.180.116
+// 94.62.180.
 
 
 //Functions Definition
-void New(knot *, short , char *, char *); //Creates a new ring with only 1 knot
+void New(knot *); //Creates a new ring with only 1 knot
 void Bentry(knot *, short *, char *, char *); //Enters a new knot ?
 void Pentry(knot *, short *, char *, char *); // Enters a new knot knowing its predecessor
 void Chord(short, char *, char *);

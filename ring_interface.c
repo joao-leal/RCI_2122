@@ -1,24 +1,23 @@
 #include "ring.h"
 
-void New(knot *host, short i, char *i_IP, char *i_Port)
+void New(knot *host)
 {
     //Creates a knot which is its own predecessor and successor
 
-    host->self_key = i;
-    host->pred_key = i;
-    host->succ_key = i;
-    strcpy(host->self_IP, i_IP);
-    strcpy(host->self_Port, i_Port);
-    strcpy(host->pred_IP, i_IP);
-    strcpy(host->pred_Port, i_Port);
+    host->pred_key = host->succ_key = host->self_key;
+    strcpy(host->pred_IP, host->self_IP);
+    strcpy(host->pred_Port, host->self_Port);
 
     printf("CREATING NEW RING...\n");
     
-    newUDP(host);
-       
+    host->fd_UDP = newUDP(host);
+    printf("UDP FD:\t%d\n", host->fd_UDP);
+
+    host->fd_listen = listenTCP(host->self_Port);
+    printf("TCP LISTEN FD:\t%d\n", host->fd_listen);
+
     
 }
-
 
 void Show(knot *k)
 {
@@ -50,7 +49,6 @@ void Bentry(knot *k, short *boot, char *boot_IP, char *boot_Port)
     
 }
 
-
 void Pentry(knot *k, short *pred, char *pred_IP, char *pred_Port)
 {
     //The entering knot has to send "SELF i i.IP i.port\n" to 'pred' via TCP
@@ -70,6 +68,7 @@ void Pentry(knot *k, short *pred, char *pred_IP, char *pred_Port)
 
     //Open TCP connection with predecessor
     k->fd_pred = connectTCP(k->pred_IP, k->pred_Port);
+    printf("CONNECTED\n");
     writeTCP(&k->fd_pred, self_m);
     closeTCP(&k->fd_pred);
 

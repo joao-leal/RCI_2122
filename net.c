@@ -1,15 +1,15 @@
 #include "net.h"
 
 
-void newUDP(knot *k)
+int newUDP(knot *k)
 {
     //Creates a new UDP server
     struct addrinfo hints, *res;
     int fd, errorcode;
-    ssize_t n, nread;
-    struct sockaddr addr;
-    socklen_t addrlen;
-    char buffer[128];
+    //ssize_t n, nread;
+    //struct sockaddr addr;
+    //socklen_t addrlen;
+    //char buffer[128];
 
     //Creates a UDP socket
     fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -28,9 +28,9 @@ void newUDP(knot *k)
     if(bind(fd, res->ai_addr, res->ai_addrlen) == -1)
         exit(1);
 
-    printf("Listening on port %s...\n", k->self_Port);
+    // printf("Listening on port %s...\n", k->self_Port);
 
-    while(1)
+/*     while(1)
     {
         addrlen = sizeof(addr);
 
@@ -51,10 +51,11 @@ void newUDP(knot *k)
         //if it receives a message saying "close", stops receiving and closes fd
         if(!strcmp(buffer, "close"))
             break;
-    }
+    } */
 
     freeaddrinfo(res);
-    close(fd);
+
+    return fd;
 }
 
 int connectTCP(char *i_IP, char *i_Port)
@@ -67,7 +68,8 @@ int connectTCP(char *i_IP, char *i_Port)
     fd = socket(AF_INET, SOCK_STREAM, 0);    //TCP socket
 
     printf("FD: %i \n", fd); //file descriptor print
-    if(fd == -1) exit(1); //error
+    if(fd == -1) 
+        exit(1); //error
 
     memset (&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;    //IPv4
@@ -77,9 +79,14 @@ int connectTCP(char *i_IP, char *i_Port)
     if (errorcode != 0) //error 
         exit(1);
 
+    printf("GOT ADDR INFO\n");
+
     n = connect(fd, res->ai_addr, res->ai_addrlen);
     if (n == -1) //error
+    {
+        printf("BAD CONNECT\n");
         exit(1);
+    }
 
 
 /* 
@@ -100,7 +107,6 @@ int connectTCP(char *i_IP, char *i_Port)
     return fd;
 
 }
-
 
 void writeTCP(int *fd, char *message)
 {
@@ -124,34 +130,39 @@ void writeTCP(int *fd, char *message)
 
 int listenTCP(char *Port)
 {
-    int fd=0, newfd=0, errorcode;
+    int fd = 0, errorcode;
     struct addrinfo hints, *res;
 
     //TCP socket and connect
-    fd = socket(AF_INET, SOCK_STREAM, 0);//TCP socket
+    fd = socket(AF_INET, SOCK_STREAM, 0);        //TCP socket
 
-    printf("FD: %i \n", fd); //file descriptor print
-    if(fd == -1) exit(1); //error
+    printf("FD: %i \n", fd);                     //file descriptor print
+    if(fd == -1) exit(1);                        //error
 
     memset (&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET;    //IPv4
-    hints.ai_socktype = SOCK_STREAM;  //TCP socket
+    hints.ai_family = AF_INET;                      //IPv4
+    hints.ai_socktype = SOCK_STREAM;                //TCP socket
+    hints.ai_flags = AI_PASSIVE;                      //TCP Socket
 
+    printf("PORT:\t%s\n", Port);
     errorcode = getaddrinfo(NULL, Port, &hints, &res);
     if (errorcode != 0) //error 
         exit(1);
     
     if(bind(fd,res->ai_addr,res->ai_addrlen)==-1)/*error*/
         exit(1);
+    printf("BIND\n");
     
-    if(!listen(newfd, MAX_BACKLOG))
+    if(listen(fd, MAX_BACKLOG) == -1)
     {
         exit(1);
     }
+    printf("LISTEN\n");
+
 
     freeaddrinfo(res);
 
-    return newfd;
+    return fd;
 
 }
 
