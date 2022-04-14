@@ -1,7 +1,7 @@
 #include "net.h"
 
 
-int newUDP(knot *k)
+int new_udp(knot *k)
 {
     //Creates a new UDP server
     struct addrinfo hints, *res;
@@ -58,7 +58,7 @@ int newUDP(knot *k)
     return fd;
 }
 
-int connectTCP(char *i_IP, char *i_Port)
+int connect_tcp(char *i_IP, char *i_Port)
 {
     //short key_in;
     int fd, n, errorcode;
@@ -107,7 +107,7 @@ int connectTCP(char *i_IP, char *i_Port)
 
 }
 
-void writeTCP(int *fd, char *message)
+void write_tcp(int *fd, char *message)
 {
     ssize_t nbytes, nleft, nwritten;
     
@@ -127,7 +127,7 @@ void writeTCP(int *fd, char *message)
     message -= nwritten;
 }
 
-int listenTCP(char *Port)
+int listen_tcp(char *Port)
 {
     int fd = 0, errorcode;
     struct addrinfo hints, *res;
@@ -140,9 +140,8 @@ int listenTCP(char *Port)
     memset (&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;                      //IPv4
     hints.ai_socktype = SOCK_STREAM;                //TCP socket
-    hints.ai_flags = AI_PASSIVE;                      //TCP Socket
+    hints.ai_flags = AI_PASSIVE;                    //TCP Socket
 
-    printf("PORT:\t%s\n", Port);
     errorcode = getaddrinfo(NULL, Port, &hints, &res);
     if (errorcode != 0) //error 
         exit(1);
@@ -161,24 +160,25 @@ int listenTCP(char *Port)
     freeaddrinfo(res);
 
     return fd;
-
 }
 
-int acceptTCP(int *fd)
+int accept_tcp(int fd)
 {
     int new_fd;
     struct sockaddr addr;
     socklen_t addrlen;
-
-    if((new_fd = accept(*fd, &addr, &addrlen)) == -1)
+    
+    new_fd = accept(fd, &addr, &addrlen);
+    if(new_fd == -1)
+    {
+        printf("BAD ACCEPT\n");
         exit(1);
-
-    printf("CONNECTED\n");
+    }   
 
     return new_fd;
 }
 
-void readTCP(int *fd, char *buffer)
+void read_tcp(int *fd, char *buffer)
 {
     ssize_t nread;
 
@@ -190,6 +190,6 @@ void readTCP(int *fd, char *buffer)
         
 }
 
-void closeTCP (int *fd){
+void close_tcp(int *fd){
     close(*fd);
 }

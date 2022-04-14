@@ -70,17 +70,20 @@ typedef struct
 
 
 //Functions Definition
-void New(knot *); //Creates a new ring with only 1 knot
-void Bentry(knot *, short *, char *, char *); //Enters a new knot ?
-void Pentry(knot *, short *, char *, char *); // Enters a new knot knowing its predecessor
-void Chord(short, char *, char *);
-void Echord();
-void Show(knot *);
+void new(knot *); //Creates a new ring with only 1 knot
+void bentry(knot *, short *, char *, char *); //Enters a new knot ?
+void pentry(knot *, short *, char *, char *); // Enters a new knot knowing its predecessor
+void chord(short, char *, char *);
+void echord();
+void show(knot *);
 void Find(short k);
-void Leave();
+void leave();
 
-void Msg_Create(char *, int, knot *);
-void Msg_Handle(char *, knot *, char *);
+void add_active_fds(knot *, fd_set *, int *);
+void close_all(knot *);
+
+void msg_create(char *, char *, knot *);
+int msg_handle(char *, knot *);
 
 
 #endif
