@@ -58,78 +58,9 @@ int new_udp(knot *k)
     return fd;
 }
 
-int connect_tcp(char *i_IP, char *i_Port)
-{
-    //short key_in;
-    int fd, n, errorcode;
-    struct addrinfo hints, *res;
-
-    //TCP socket and connect
-    fd = socket(AF_INET, SOCK_STREAM, 0);    //TCP socket
-
-    if(fd == -1) 
-        exit(1); //error
-
-    memset (&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET;    //IPv4
-    hints.ai_socktype = SOCK_STREAM;  //TCP socket
-
-    errorcode = getaddrinfo(i_IP, i_Port, &hints, &res);
-    if (errorcode != 0) //error 
-        exit(1);
-
-    printf("GOT ADDR INFO\n");
-
-    n = connect(fd, res->ai_addr, res->ai_addrlen);
-    if (n == -1) //error
-    {
-        printf("BAD CONNECT\n");
-        exit(1);
-    }
-
-
-/* 
-    while (nleft > 0) {nread = read(fd, ptr, nleft);
-    if (nread == -1) //error
-        exit(1);
-    else if (nread == 0) break; //closed by peer
-    nleft -= nread;
-    ptr += nread;}
-
-    nread = nbytes - nleft;
-
-    buffer [nread] = '\0';
-    printf ("echo: %s\n", buffer);
-    printf("FD: %i", fd); 
-*/
-
-    return fd;
-
-}
-
-void write_tcp(int *fd, char *message)
-{
-    ssize_t nbytes, nleft, nwritten;
-    
-
-    nbytes = strlen(message);
-    printf("nbytes: %zd \n", nbytes);
-    nleft = nbytes;
-
-    while (nleft>0) 
-    {
-        nwritten = write(*fd, message, nleft);
-        if (nwritten <= 0) /*error*/
-            exit(1);
-        nleft -= nwritten;
-        message += nwritten;
-    }
-    message -= nwritten;
-}
-
 int listen_tcp(char *Port)
 {
-    int fd = 0, errorcode;
+    int fd = 0, errorcode, reuse = 1;
     struct addrinfo hints, *res;
 
     //TCP socket and connect
@@ -141,14 +72,18 @@ int listen_tcp(char *Port)
     hints.ai_family = AF_INET;                      //IPv4
     hints.ai_socktype = SOCK_STREAM;                //TCP socket
     hints.ai_flags = AI_PASSIVE;                    //TCP Socket
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof reuse);
 
     errorcode = getaddrinfo(NULL, Port, &hints, &res);
-    if (errorcode != 0) //error 
+    if (errorcode != 0)
+    { //error 
+        fprintf(stderr, "GETADDRINFO ERROR: %s\n", strerror(errno));
         exit(1);
+    } 
     
-    if(bind(fd,res->ai_addr,res->ai_addrlen)==-1)/*error*/
+    if(bind(fd,res->ai_addr,res->ai_addrlen)==-1) //error
         exit(1);
-    printf("BIND\n");
+    printf("BIND\n"); 
     
     if(listen(fd, MAX_BACKLOG) == -1)
     {
@@ -157,23 +92,79 @@ int listen_tcp(char *Port)
     printf("LISTEN\n");
 
 
-    freeaddrinfo(res);
+    //freeaddrinfo(res);
 
     return fd;
 }
 
-int accept_tcp(int fd)
+int connect_tcp(char *i_IP, char *i_Port)
 {
-    int new_fd;
+    //short key_in;
+    int fd, n, errorcode, reuse = 1;
+    struct addrinfo hints, *res;
+
+    //TCP socket and connect
+    fd = socket(AF_INET, SOCK_STREAM, 0);    //TCP socket
+
+    if(fd == -1) 
+        exit(1); //error
+
+    memset (&hints, 0, sizeof hints);
+    hints.ai_family = AF_INET;          //IPv4
+    hints.ai_socktype = SOCK_STREAM;    //TCP socket
+    hints.ai_protocol=IPPROTO_TCP;      //TCP socket
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof reuse);
+
+    errorcode = getaddrinfo(i_IP, i_Port, &hints, &res);
+    if (errorcode != 0)
+    { //error 
+            
+        exit(1);
+    } 
+
+    printf("GOT ADDR INFO: %s - %d\n", res->ai_addr->sa_data, res->ai_addrlen);
+
+    
+    n = connect(fd, res->ai_addr, res->ai_addrlen);
+    if(n == -1) //error
+    {
+        fprintf(stderr, "CONNECT ERROR: %s\n", strerror(errno));
+        exit(1);
+    }
+
+    return fd;
+
+}
+
+void write_tcp(int *fd, char *message)
+{
+    ssize_t nbytes, nwritten;
+
+    nbytes = strlen(message);
+    
+    //printf("nbytes: %zd \n", nbytes);
+    nwritten = write(*fd, message, nbytes);
+    if (nwritten <= 0) /*error*/
+        exit(1);
+
+
+}
+
+int accept_tcp(int *fd)
+{
+    int new_fd, reuse = 1;
     struct sockaddr addr;
     socklen_t addrlen;
-    
-    new_fd = accept(fd, &addr, &addrlen);
+
+    new_fd = accept(*fd, &addr, &addrlen);
+
     if(new_fd == -1)
     {
-        printf("BAD ACCEPT\n");
+        fprintf(stderr, "ACCEPT ERROR: %s\n", strerror(errno));
+        printf("ERROR: %d\n", errno);
         exit(1);
-    }   
+    } 
+    setsockopt(new_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
 
     return new_fd;
 }
@@ -181,13 +172,20 @@ int accept_tcp(int fd)
 void read_tcp(int *fd, char *buffer)
 {
     ssize_t nread;
+    char aux[MAX_MESSAGE_LENGTH];
 
-    nread = read(*fd, buffer, MAX_MESSAGE_LENGTH);
-    if(nread == -1) /*error*/
-        exit(1);
-    /* else if(nread == 0)
-        return; //closed by peer */ 
-        
+    
+    do
+    {
+        nread = read(*fd, buffer, MAX_MESSAGE_LENGTH);
+        if(nread == -1) /*error*/
+        {
+            fprintf(stderr, "READ ERROR: %s\n", strerror(errno));
+            exit(1);
+        }
+
+        strcat(aux, buffer);
+    }while(!strstr(buffer, "\n"));
 }
 
 void close_tcp(int *fd){

@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <signal.h>
+#include <errno.h>
 
 #define RING_SIZE 32
 #define COMMAND_LENGTH 16
@@ -83,7 +84,7 @@ void add_active_fds(knot *, fd_set *, int *);
 void close_all(knot *);
 
 void msg_create(char *, char *, knot *);
-int msg_handle(char *, knot *);
+void msg_handle(char *, knot *);
 
 
 #endif

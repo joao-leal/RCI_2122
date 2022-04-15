@@ -1,5 +1,6 @@
 #include "ring.h"
 
+
 int main(int argc, char * argv[])
 {
 
@@ -10,6 +11,12 @@ int main(int argc, char * argv[])
 
     //Initializes knot structure
     memset(&node, 0, sizeof(knot));
+    node.pred_key = -1;
+    node.succ_key = -1;
+    node.fd_aux = -1;
+    node.fd_pred = -1;
+    node.fd_succ = -1;
+
 
     //Prevents SIGPIPE Signal
     struct sigaction act;
@@ -18,9 +25,9 @@ int main(int argc, char * argv[])
     sigaction(SIGPIPE,&act,NULL);
 
 
-    if(atoi(argv[1]) > 32 || atoi(argv[1]) < 1)
+    if(atoi(argv[1]) > 31 || atoi(argv[1]) < 0)
     {
-        printf("Key must be within ring limits [1:32]\n");
+        printf("Key must be within ring limits [0:31]\n");
         exit(1);
     }
     node.self_key = atoi(argv[1]);
@@ -30,7 +37,11 @@ int main(int argc, char * argv[])
 
     printf("KEY: \t %d\nIP: \t %s\nPORT: \t %s\n", node.self_key, node.self_IP, node.self_Port);
     
+    if(!node.fd_UDP)
+        node.fd_UDP = new_udp(&node);
 
+    if(!node.fd_listen)
+        node.fd_listen = listen_tcp(node.self_Port);
     //User Interface
     
     while(1)
@@ -41,17 +52,21 @@ int main(int argc, char * argv[])
 
         struct timeval tv;
 
-        tv.tv_sec = 300;
+        tv.tv_sec = 30;
 
         //printf("LOOP\n");
         
         //Adds the active file descriptors for TCP & UDP connections and for the STDIN to the read set
         add_active_fds(&node, &read_fds, &max_fd);
+    
         
 
         counter = select(max_fd+1, &read_fds, NULL, NULL, &tv);
         if(counter <= 0)
+        {
+            perror("select");
             exit(1);
+        }
         
 
         /************************************/
@@ -117,20 +132,13 @@ int main(int argc, char * argv[])
         //Incoming TCP request
         if(node.fd_listen && FD_ISSET(node.fd_listen, &read_fds))
         {
-            if(node.pred_key == 0) //Knot is not in ring
-            {
-                
-                
-            }
-            else
-            {
-                //Accept incoming request
-                printf("ACCEPTING\n");
-                node.fd_aux = accept_tcp(node.fd_listen);
-                printf("CONNECTED\n");
-                printf("ACCEPTED FD:\t%d\n", node.fd_aux);
+            //Accept incoming request
+            printf("ACCEPTING\n");
+            sleep(1);
 
-            }
+            node.fd_aux = accept_tcp(&node.fd_listen);
+            printf("CONNECTED\n");
+            
         }//fd_listen
 
         //Incoming message from some node
@@ -146,6 +154,11 @@ int main(int argc, char * argv[])
 
             FD_CLR(node.fd_aux, &read_fds);
             node.fd_aux = 0;
+
+            show(&node);
+            // sleep(2);
+
+
         }//fd_aux
 
         //Incoming message from PRED
@@ -153,28 +166,46 @@ int main(int argc, char * argv[])
         {
             char buffer[MAX_MESSAGE_LENGTH];
 
+            printf("Incoming from PRED\n");
+
             read_tcp(&node.fd_pred, buffer);
-            printf("RECEIVED:\t%s\n", buffer);
+            printf("RECEIVED FROM PRED:\t%s\n", buffer);
 
             //We have to handle the message
             msg_handle(buffer, &node);
         
+            FD_CLR(node.fd_pred, &read_fds);
+
+            show(&node);
+            // sleep(2);
+
+
         }
 
         //Incoming message from SUCC
-        if(node.fd_succ && FD_ISSET(node.fd_short, &read_fds))
+        if(node.fd_succ && FD_ISSET(node.fd_succ, &read_fds))
         {
-            /* char buffer[MAX_MESSAGE_LENGTH];
+            char buffer[MAX_MESSAGE_LENGTH];
 
+            printf("Incoming from SUCC\n");
             read_tcp(&node.fd_aux, buffer);
-            printf("RECEIVED:\t%s\n", buffer);
+            printf("RECEIVED FROM SUCC:\t%s\n", buffer);
 
             //We have to handle the message
-            msg_handle(buffer, &node); */
+            msg_handle(buffer, &node); 
+
+            FD_CLR(node.fd_succ, &read_fds);
+
+            show(&node);
+            // sleep(2);
+
+
+
         }
 
         if(node.fd_short && FD_ISSET(node.fd_short, &read_fds))
         {
+            continue;
         }
 
     }//while

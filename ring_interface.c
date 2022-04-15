@@ -5,17 +5,12 @@ void new(knot *host)
 {
     //Creates a knot which is its own predecessor and successor
 
-    host->pred_key = host->succ_key = host->self_key;
+    host->pred_key = host->self_key;
     strcpy(host->pred_IP, host->self_IP);
     strcpy(host->pred_Port, host->self_Port);
 
     printf("CREATING NEW RING...\n");
     
-    host->fd_UDP = new_udp(host);
-    printf("UDP FD:\t%d\n", host->fd_UDP);
-
-    host->fd_listen = listen_tcp(host->self_Port);
-    printf("TCP LISTEN FD:\t%d\n", host->fd_listen);
 
     
 }
@@ -24,12 +19,12 @@ void show(knot *node)
 {
     printf("\e[1;1H\e[2J");
 
-    printf("KNOT:\t\t %d\t\tIP: %s\t\tPORT: %s\n", node->self_key, node->self_IP, node->self_Port);
+    printf("NODE:\t\t %d\t\tIP: %s\t\tPORT: %s\n", node->self_key, node->self_IP, node->self_Port);
 
     //if the knot doesn't have a succesor then it's alone in the ring!
     if(!strcmp(node->succ_IP, "") && !strcmp(node->pred_IP, ""))
     {
-        printf("KNOT IS ALONE IN THE RING.\n\n");
+        printf("NODE IS ALONE IN THE RING.\n\n");
         return;
     }
     else if(strcmp(node->succ_IP, ""))
@@ -56,25 +51,30 @@ void pentry(knot *node, short *pred, char *pred_IP, char *pred_Port)
 
     char i_IP[IP_SIZE] = "", i_Port[PORT_SIZE] = "", msg[MAX_MESSAGE_LENGTH] = "";
 
-    strcpy(i_IP, node->self_IP);
-    strcpy(i_Port, node->self_Port);
+    strcpy(i_IP, pred_IP);
+    strcpy(i_Port, pred_Port);
+
+    printf("PENTRY: %s - %s\n", i_IP, i_Port);
+
+    //Open TCP connection with predecessor
+    node->fd_pred = connect_tcp(i_IP, i_Port);
+    if(node->fd_pred == -1)
+    {
+        fprintf(stderr, "CONNECT ERROR: %s\n", strerror(errno));
+    }
+    printf("CONNECTED\n");
 
     //Its predecessor is now 'pred'
     node->pred_key = *pred;
     strcpy(node->pred_IP, pred_IP);
     strcpy(node->pred_Port, pred_Port);
-
-    node->fd_listen = listen_tcp(node->self_Port);
-
-    //Open TCP connection with predecessor
-    node->fd_pred = connect_tcp(node->pred_IP, node->pred_Port);
-    printf("CONNECTED\n");
+    sleep(1);
 
     //Create SELF message and send it
     msg_create(msg, "SELF", node);
     write_tcp(&node->fd_pred, msg);
 
-    printf("SENT:\t%s\n", msg);
+    printf("SENT TO %d:\t%s\n", node->pred_key, msg);
 }
 
 void add_active_fds(knot *node, fd_set *read_fds, int *max_fd)
@@ -148,7 +148,9 @@ void msg_create(char *msg, char mode[5], knot *node)
 {
     //Type SELF
     if(!strcmp(mode, "SELF"))
+    {
         sprintf(msg, "SELF %d %s %s\n", node->self_key, node->self_IP, node->self_Port);
+    }
 
     //Type PRED
     if(!strcmp(mode, "PRED"))
@@ -156,7 +158,7 @@ void msg_create(char *msg, char mode[5], knot *node)
 
 }
 
-int msg_handle(char *msg, knot *node)
+void msg_handle(char *msg, knot *node)
 {
     char buffer[MAX_MESSAGE_LENGTH];
     strcpy(buffer, msg);
@@ -167,79 +169,119 @@ int msg_handle(char *msg, knot *node)
         //new successor
 
         char retmsg[MAX_MESSAGE_LENGTH];
+        short recv_key = 0;
 
+        sscanf(msg, "%*s %hd", &recv_key);
         printf("HANDLING SELF MSG...\n");
-        node->fd_succ = node->fd_aux;
+
+        printf("RECVD KEY: %hd \t SELF KEY: %hd \t SUCC KEY: %hd\n", recv_key, node->self_key, node->succ_key);
+
         
-        if(strlen(node->succ_IP))
+        if(recv_key > node->self_key)
         {
-            //It has to inform its old successor of
-            //its new predecessor (the old successor's)
-
-             //Creates a PRED message to send to it
-            msg_create(retmsg, "PRED" , node);
-
-            printf("MESSAGE TO OLD SUCCESSOR:\t%s\n", retmsg);
-
-           /*  node->fd_succ = connect_tcp(node->succ_IP, node->succ_Port);
-            if(node->fd_succ == -1)
+            //Node is alone in ring
+            if(node->succ_key == -1 && node->pred_key == node->self_key)
             {
-                printf("ERROR: SUCC CONNECT MSG_HANDLE\n");
-                exit(1);
+                printf("Alone in ring!\n");
+                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+
+                node->fd_pred = node->fd_succ;
+                node->pred_key = node->succ_key;
+                strcpy(node->pred_IP, node->succ_IP);
+                strcpy(node->pred_Port, node->succ_Port);
+
+                printf("NEW SUCC:\nKEY:\t%hd\nIP:\t%s\nPORT:\t%s\n", node->succ_key, node->succ_IP, node->succ_Port);
+
+                node->fd_succ = node->fd_aux;
+                node->fd_pred = node->fd_succ;
+
+                msg_create(retmsg, "SELF" , node);
+
+                printf("MESSAGE TO PRED %d:\t%s\n", node->pred_key, retmsg);
+
+                write_tcp(&node->fd_pred, retmsg);
+                
+            }
+            else if(recv_key != node->succ_key && recv_key != node->pred_key)
+            {
+                //Normal entering mode
+                if(recv_key > node->self_key && node->succ_key != -1)
+                {
+                    printf("Normal!\n");
+
+                    short i = node->succ_key;
+
+                    //It has to inform its old successor of
+                    //its new predecessor (the old successor's)
+
+                    sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+
+                    //Creates a PRED message to send to it
+                    msg_create(retmsg, "PRED" , node);
+
+                    printf("MESSAGE TO OLD SUCCESSOR %d:\t%s\n", i, retmsg);
+
+                    
+
+                    write_tcp(&node->fd_succ, retmsg);
+
+                    //It can close its connection to the previous
+                    //succ, since it is no more
+                    close_tcp(&node->fd_succ);
+
+                    node->fd_succ = node->fd_aux;
+                    node->fd_aux = 0;
+
+                    //Updates succ info with newly entered node
+                    printf("NEW SUCC:\nKEY:\t%hd\nIP:\t%s\nPORT:\t%s\n", node->succ_key, node->succ_IP, node->succ_Port);
+
+                    
+                }
+                //Arriving node can't connect with self as
+                //its pred
+                else if(recv_key > node->succ_key && node->succ_key != -1)
+                {
+                    write_tcp(&node->fd_aux, "CAN'T CONNECT HERE!\n");
+                    close_tcp(&node->fd_aux);
+
+                }
+                else if(recv_key > node->self_key)//Its the succ identifying itself
+                {
+                    printf("GOT UR INFO SUCC\n");
+                    sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                    node->fd_succ = node->fd_aux;
+                    node->fd_aux = 0;
+
+                    printf("NEW SUCC:\nKEY:\t%hd\nIP:\t%s\nPORT:\t%s\n", node->succ_key, node->succ_IP, node->succ_Port);
+                }
+                else if(recv_key != node->succ_key)//Keys are the same and it's not the succ node messaging
+                {
+                    write_tcp(&node->fd_aux, "There's already a key equal to yours! [DISCONNECTING]\n");
+                    close_tcp(&node->fd_aux);
+                }
+            }//Not alone
+            /* else if(recv_key != node->succ_key)
+            {
+                printf("GOT UR INFO SUCC\n");
+                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                node->fd_succ = node->fd_aux;
+                node->fd_aux = 0;
+
+                printf("NEW SUCC:\nKEY:\t%hd\nIP:\t%s\nPORT:\t%s\n", node->succ_key, node->succ_IP, node->succ_Port);
             } */
-
-            write_tcp(&node->fd_succ, retmsg);
-
-            //It can close its connection to the previous
-            //succ, since it is no more
-            close_tcp(&node->fd_succ);
-
-            sscanf(buffer, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
-
-            printf("NEW SUCC:\nKEY:\t%hd\nIP:\t%s\nPORT:\t%s\n", node->succ_key, node->succ_IP, node->succ_Port);
-
-        }
+        } // > self
         else
         {
-            //There are only 2 nodes in the ring
+            printf("GOT UR INFO SUCC\n");
             sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+            node->fd_succ = node->fd_aux;
+            node->fd_aux = 0;
 
-            //Its pred = succ
-
-            if(node->succ_key && (node->succ_key != node->pred_key))
-            {
-                node->fd_pred = node->fd_succ;
-                node->pred_key = node->succ_key;
-                strcpy(node->pred_IP, node->succ_IP);
-                strcpy(node->pred_Port, node->succ_Port);
-
-                printf("NEW SUCC:\nKEY:\t%hd\nIP:\t%s\nPORT:\t%s\n", node->succ_key, node->succ_IP, node->succ_Port);
-
-                //Has to send SELF to its pred
-                msg_create(buffer, "SELF", node);
-                write_tcp(&node->fd_pred, buffer);
-
-                printf("SENT: \t%s\n", buffer);
-            }
-            else
-            {
-                node->fd_pred = node->fd_succ;
-                node->pred_key = node->succ_key;
-                strcpy(node->pred_IP, node->succ_IP);
-                strcpy(node->pred_Port, node->succ_Port);
-
-                puts(buffer);
-                sscanf(buffer, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
-
-                printf("NEW SUCC:\nKEY:\t%hd\nIP:\t%s\nPORT:\t%s\n", node->succ_key, node->succ_IP, node->succ_Port);
-            }
-
-            
+            printf("NEW SUCC:\nKEY:\t%hd\nIP:\t%s\nPORT:\t%s\n", node->succ_key, node->succ_IP, node->succ_Port);
         }
-    }
-        return 0;
+    }//SELF
 
-    if(!strcmp("PRED", strtok(buffer, " ")))
+    else if(!strcmp("PRED", strtok(buffer, " ")))
     {
         char retmsg[MAX_MESSAGE_LENGTH];
 
@@ -247,24 +289,29 @@ int msg_handle(char *msg, knot *node)
 
         sscanf(msg, "%*s %hd %s %s", &node->pred_key, node->pred_IP, node->pred_Port);
 
-        if(node->fd_pred)
-        node->fd_pred = connect_tcp(node->succ_IP, node->succ_Port);
+        if(node->fd_pred);
+        close_tcp(&node->fd_pred);
 
-        if(node->fd_pred == -1)
+        if((node->fd_pred = connect_tcp(node->pred_IP, node->pred_Port)) == -1)
         {
             printf("BAD CONNECT TO NEW PRED\n");
             exit(1);
         }
 
+        sleep(1);
+
         msg_create(retmsg, "SELF", node);
         write_tcp(&node->fd_pred, retmsg);
 
-        printf("SENT: %s", retmsg);
+        printf("SENT TO %d: %s", node->pred_key, retmsg);
 
-        return 1;
 
     }
 
+    else
+    {
+        puts(msg);
+        return;
+    }
 
-    return -1;
 }

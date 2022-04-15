@@ -9,7 +9,7 @@
 int new_udp(knot *);
 int listen_tcp(char *);
 int connect_tcp(char *, char*);
-int accept_tcp(int);
+int accept_tcp(int *);
 void write_tcp(int *, char *);
 void read_tcp(int *, char *);
 void close_tcp(int *);
