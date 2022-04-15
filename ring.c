@@ -41,7 +41,7 @@ int main(int argc, char * argv[])
         node.fd_UDP = new_udp(&node);
 
     if(!node.fd_listen)
-        node.fd_listen = listen_tcp(node.self_Port);
+        node.fd_listen = listen_tcp(node.self_IP, node.self_Port);
     //User Interface
     
     while(1)

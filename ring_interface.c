@@ -19,7 +19,7 @@ void show(knot *node)
 {
     printf("\e[1;1H\e[2J");
 
-    printf("NODE:\t\t %d\t\tIP: %s\t\tPORT: %s\n", node->self_key, node->self_IP, node->self_Port);
+    printf("NODE:\t %d\tIP: %s\tPORT: %s\n", node->self_key, node->self_IP, node->self_Port);
 
     //if the knot doesn't have a succesor then it's alone in the ring!
     if(!strcmp(node->succ_IP, "") && !strcmp(node->pred_IP, ""))
@@ -28,14 +28,14 @@ void show(knot *node)
         return;
     }
     else if(strcmp(node->succ_IP, ""))
-        printf("SUCCESSOR:\t %d\t\tIP: %s\t\tPORT: %s\n", node->succ_key, node->succ_IP, node->succ_Port);
+        printf("SUCCESSOR:\t %d\tIP: %s\tPORT: %s\n", node->succ_key, node->succ_IP, node->succ_Port);
 
     //from here the knot can't be alone in the ring
-    printf("PREDECESSOR:\t %d\t\tIP: %s\t\tPORT: %s\n", node->pred_key, node->pred_IP, node->pred_Port);
+    printf("PREDECESSOR:\t %d\tIP: %s\tPORT: %s\n", node->pred_key, node->pred_IP, node->pred_Port);
 
     //if there is a shortcut somewhere it's also displayed
     if(strcmp(node->short_IP, ""))
-        printf("SHORTCUT:\t %d\t\tIP: %s\t\tPORT: %s\n", node->short_key, node->short_IP, node->short_Port);
+        printf("SHORTCUT:\t %d\tIP: %s\tPORT: %s\n", node->short_key, node->short_IP, node->short_Port);
 
 }
 
