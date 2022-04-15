@@ -13,10 +13,14 @@ int main(int argc, char * argv[])
     memset(&node, 0, sizeof(knot));
     node.pred_key = -1;
     node.succ_key = -1;
+    node.short_key = -1;
     node.fd_aux = -1;
     node.fd_pred = -1;
     node.fd_succ = -1;
-
+    node.fd_question = -1;
+    for (int p=0; p < 100; p++){
+        node.seq [p] = 0;
+    }
 
     //Prevents SIGPIPE Signal
     struct sigaction act;
@@ -39,7 +43,7 @@ int main(int argc, char * argv[])
     
     if(!node.fd_UDP)
     {
-        
+
         node.fd_UDP = new_udp(&node);
 
     }
@@ -48,7 +52,7 @@ int main(int argc, char * argv[])
         node.fd_listen = listen_tcp(node.self_Port);
     //User Interface
     menu_dsp();
-    
+
     while(1)
     {
 
@@ -66,6 +70,7 @@ int main(int argc, char * argv[])
         add_active_fds(&node, &read_fds, &max_fd);
     
         
+
         counter = select(max_fd+1, &read_fds, NULL, NULL, &tv);
         if(counter <= 0)
         {
@@ -126,7 +131,12 @@ int main(int argc, char * argv[])
                 printf("\e[1;1H\e[2J");
                 menu_dsp();
 
-            }   
+            }
+            }
+            else if(!strcmp("find", command) || !strcmp("f", command))
+            {
+                msg_create(input, "FIND", node);
+            }
             else if(!strcmp("leave", command) || !strcmp("l", command))
             {
                 msg_handle("LEAVE", &node);
