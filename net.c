@@ -1,7 +1,7 @@
 #include "net.h"
 
 
-int new_udp(knot *k, struct sockaddr_in *addr, socklen_t* addrlen)
+int new_udp(knot *k)
 {
     //Creates a new UDP server
     struct addrinfo hints, *res;
@@ -60,7 +60,34 @@ int new_udp(knot *k, struct sockaddr_in *addr, socklen_t* addrlen)
 
 void read_udp(int *fd, char *buffer)
 {
+    socklen_t addrlen;
+    struct sockaddr_in addr;
+    ssize_t n;
 
+    addrlen = sizeof(addr);
+
+    n = recvfrom(*fd, buffer, MAX_MESSAGE_LENGTH, 0, (struct sockaddr*)&addr, &addrlen);
+    if(n == -1)
+    {
+        perror("recvfrom");
+        exit(1);
+    }
+}
+
+void send_udp(int *fd, char *msg)
+{
+    socklen_t addrlen;
+    struct sockaddr_in addr;
+    ssize_t n;
+
+    addrlen = sizeof(addr);
+
+    n = recvfrom(*fd, msg, strlen(msg), 0, (struct sockaddr*)&addr, &addrlen);
+    if(n == -1)
+    {
+        perror("recvfrom");
+        exit(1);
+    }
 }
 
 int listen_tcp(char *Port)

@@ -166,224 +166,225 @@ void msg_handle(char *msg, knot *node)
 {
     char buffer[MAX_MESSAGE_LENGTH];
     strcpy(buffer, msg);
-
-    if(!strcmp("SELF", strtok(buffer, " ")))
+    if(strstr(msg, "\n"))//TCP MESSAGE
     {
-        char retmsg[MAX_MESSAGE_LENGTH];
-        short recv_key = 0;
-
-        sscanf(msg, "%*s %hd", &recv_key);
-        printf("HANDLING SELF MSG...\n");
-
-        printf("RECVD KEY: %hd \t SELF KEY: %hd \t PRED KEY: %d \t SUCC KEY: %hd\n", recv_key, node->self_key, node->pred_key, node->succ_key);
-
-        //Node is trying to enter with a key equal 
-        //to mine!
-        if(recv_key == node->self_key)
+        if(!strcmp("SELF", strtok(buffer, " ")))
         {
-            write_tcp(&node->fd_aux, "Same key as mine!\n");
-            sleep(1);
-            close_tcp(&node->fd_aux);
-        }
-        else if(recv_key > node->self_key) 
-        {
-            //I'm PRED to node but alone in the ring
-            if(node->self_key == node->pred_key && node->succ_key == -1)
+            char retmsg[MAX_MESSAGE_LENGTH];
+            short recv_key = 0;
+
+            sscanf(msg, "%*s %hd", &recv_key);
+            printf("HANDLING SELF MSG...\n");
+
+            printf("RECVD KEY: %hd \t SELF KEY: %hd \t PRED KEY: %d \t SUCC KEY: %hd\n", recv_key, node->self_key, node->pred_key, node->succ_key);
+
+            //Node is trying to enter with a key equal 
+            //to mine!
+            if(recv_key == node->self_key)
             {
-                //Update SUCC
-                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
-                node->fd_succ = node->fd_aux;
-                node->fd_aux = -1;
-
-                //PRED = SUCC
-                node->pred_key = node->succ_key;
-                strcpy(node->pred_IP, node->succ_IP);
-                strcpy(node->pred_Port, node->succ_Port);
-
-                //Send SELF to PRED (through fd_succ)
-                msg_create(retmsg, "SELF", node);
-
-                write_tcp(&node->fd_succ, retmsg);
-                return;
-            }
-            else if(node->succ_key != -1)
-            //I'm PRED to node entering normal ring
-            {
-                int prev_succ_fd = -1;
-
-                //Update SUCC
-                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
-                prev_succ_fd = node->fd_succ;
-                node->fd_succ = node->fd_aux;
-                node->fd_aux = -1;
-
-                //Send PRED to previous SUCC
-                msg_create(retmsg, "PRED", node);
-
-                write_tcp(&prev_succ_fd, retmsg);
-
-                //sleep(5);
-
-                //Close previous SUCC conn.
-                //close_tcp(&prev_succ_fd);
-
-                return;
-            }
-            else if(node->succ_key == -1)
-            //I'm receiving SUCC info
-            {
-                //Update SUCC
-                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
-                node->fd_succ = node->fd_aux;
-                node->fd_aux = -1;
-
-                return;
-            }
-            else if(recv_key == node->succ_key)
-            //Node can't enter because it has the same
-            //key as my SUCC
-            {
-                //Can't connect, bye!
-                write_tcp(&node->fd_aux, "Same key as my successor, try another!\n");
+                write_tcp(&node->fd_aux, "Same key as mine!\n");
                 sleep(1);
                 close_tcp(&node->fd_aux);
             }
-            else if(recv_key > node->succ_key)
-            //It means my SUCC wants to leave
+            else if(recv_key > node->self_key) 
             {
-                //Update SUCC
-                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
-                node->fd_succ = node->fd_aux;
-                node->fd_aux = -1;
+                //I'm PRED to node but alone in the ring
+                if(node->self_key == node->pred_key && node->succ_key == -1)
+                {
+                    //Update SUCC
+                    sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                    node->fd_succ = node->fd_aux;
+                    node->fd_aux = -1;
+
+                    //PRED = SUCC
+                    node->pred_key = node->succ_key;
+                    strcpy(node->pred_IP, node->succ_IP);
+                    strcpy(node->pred_Port, node->succ_Port);
+
+                    //Send SELF to PRED (through fd_succ)
+                    msg_create(retmsg, "SELF", node);
+
+                    write_tcp(&node->fd_succ, retmsg);
+                    return;
+                }
+                else if(node->succ_key != -1)
+                //I'm PRED to node entering normal ring
+                {
+                    int prev_succ_fd = -1;
+
+                    //Update SUCC
+                    sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                    prev_succ_fd = node->fd_succ;
+                    node->fd_succ = node->fd_aux;
+                    node->fd_aux = -1;
+
+                    //Send PRED to previous SUCC
+                    msg_create(retmsg, "PRED", node);
+
+                    write_tcp(&prev_succ_fd, retmsg);
+
+                    //sleep(5);
+
+                    //Close previous SUCC conn.
+                    //close_tcp(&prev_succ_fd);
+
+                    return;
+                }
+                else if(node->succ_key == -1)
+                //I'm receiving SUCC info
+                {
+                    //Update SUCC
+                    sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                    node->fd_succ = node->fd_aux;
+                    node->fd_aux = -1;
+
+                    return;
+                }
+                else if(recv_key == node->succ_key)
+                //Node can't enter because it has the same
+                //key as my SUCC
+                {
+                    //Can't connect, bye!
+                    write_tcp(&node->fd_aux, "Same key as my successor, try another!\n");
+                    sleep(1);
+                    close_tcp(&node->fd_aux);
+                }
+                else if(recv_key > node->succ_key)
+                //It means my SUCC wants to leave
+                {
+                    //Update SUCC
+                    sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                    node->fd_succ = node->fd_aux;
+                    node->fd_aux = -1;
+                }
             }
-        }
-        else if(recv_key < node->self_key)
+            else if(recv_key < node->self_key)
+            {
+                //I'm the node entering the ring with only 1
+                //node
+                if(recv_key == node->pred_key)
+                {
+                    sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                    node->fd_succ = node->fd_pred;
+
+                    return;
+                }
+                //My new SUCC wants to inform me
+                else if(node->succ_key == -1)
+                {   
+                    //Update SUCC
+                    sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                    node->fd_succ = node->fd_aux;
+                    node->fd_aux = -1;
+                }
+                else if(recv_key < node->succ_key)
+                //Node wants to enter through the end
+                //(I'm the biggest key node))
+                {
+                    //Normal entry(?)
+                    int prev_succ_fd;
+
+                    //Update SUCC
+                    sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                    prev_succ_fd = node->fd_succ;
+                    node->fd_succ = node->fd_aux;
+                    node->fd_aux = -1;
+                    
+
+                    //Send PRED to prev. SUCC
+                    msg_create(retmsg, "PRED", node);
+
+                    write_tcp(&prev_succ_fd, retmsg);
+
+
+                    //Close conn. inbetween
+                    
+                    //close_tcp(&prev_succ_fd);
+
+                }
+                else if(recv_key < node->pred_key)
+                {
+                    //Update SUCC
+                    sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                    node->fd_succ = node->fd_aux;
+                    node->fd_aux = -1;
+
+                    return;
+
+                }
+                else
+                //This can't happen! I can't be PRED to a
+                //key before me!
+                {
+                    //Can't have a key lower than mine, bye!
+                    printf("KEY IS LOWER THAN MINE\n");
+                    write_tcp(&node->fd_aux, "Your key is lower than mine!\n");
+                    sleep(3);
+                    close_tcp(&node->fd_aux);
+                    node->fd_aux = -1;
+
+                    return;
+                }
+            }
+            
+        }//SELF
+
+        else if(!strcmp("PRED", strtok(buffer, " ")))
         {
-            //I'm the node entering the ring with only 1
-            //node
-            if(recv_key == node->pred_key)
+            char retmsg[MAX_MESSAGE_LENGTH];
+            int prev_pred_fd = 0;
+            short recv_key;
+
+            printf("HANDLING PRED MSG...\n");
+
+            sscanf(msg, "%*s %hd", &recv_key);
+
+            if(recv_key == node->self_key)
+            //I'm the last one!
             {
-                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
-                node->fd_succ = node->fd_pred;
+                //Update SUCC & PRED
+                sscanf(msg, "%*s %hd %s %s", &node->pred_key, node->pred_IP, node->pred_Port);
+                prev_pred_fd = node->fd_pred;
+
+                node->succ_key = -1;
+                strcpy(node->succ_IP, "");  
+                strcpy(node->succ_Port, "");
+                close_tcp(&node->fd_pred);
+                close_tcp(&node->fd_succ);         
+
 
                 return;
-            }
-            //My new SUCC wants to inform me
-            else if(node->succ_key == -1)
-            {   
-                //Update SUCC
-                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
-                node->fd_succ = node->fd_aux;
-                node->fd_aux = -1;
-            }
-            else if(recv_key < node->succ_key)
-            //Node wants to enter through the end
-            //(I'm the biggest key node))
-            {
-                //Normal entry(?)
-                int prev_succ_fd;
-
-                //Update SUCC
-                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
-                prev_succ_fd = node->fd_succ;
-                node->fd_succ = node->fd_aux;
-                node->fd_aux = -1;
-                
-
-                //Send PRED to prev. SUCC
-                msg_create(retmsg, "PRED", node);
-
-                write_tcp(&prev_succ_fd, retmsg);
-
-
-                //Close conn. inbetween
-                
-                //close_tcp(&prev_succ_fd);
-
-            }
-            else if(recv_key < node->pred_key)
-            {
-                //Update SUCC
-                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
-                node->fd_succ = node->fd_aux;
-                node->fd_aux = -1;
-
-                return;
-
             }
             else
-            //This can't happen! I can't be PRED to a
-            //key before me!
             {
-                //Can't have a key lower than mine, bye!
-                printf("KEY IS LOWER THAN MINE\n");
-                write_tcp(&node->fd_aux, "Your key is lower than mine!\n");
-                sleep(3);
-                close_tcp(&node->fd_aux);
-                node->fd_aux = -1;
+                //Update PRED
+                sscanf(msg, "%*s %hd %s %s", &node->pred_key, node->pred_IP, node->pred_Port);
+                prev_pred_fd = node->fd_pred;
+
+                //Send SELF to new PRED
+                node->fd_pred = connect_tcp(node->pred_IP, node->pred_Port);
+                if(node->fd_pred == -1)
+                {
+                    perror("CONNECT PRED MSG:");
+                    exit(1);
+                }
+
+                msg_create(retmsg, "SELF", node);
+
+                write_tcp(&node->fd_pred, retmsg);
+
+                
+                //Close conn. with prev. PRED
+                //sleep(5);
+                //close_tcp(&prev_pred_fd);
 
                 return;
-            }
-        }
-        
-    }//SELF
 
-    else if(!strcmp("PRED", strtok(buffer, " ")))
-    {
-        char retmsg[MAX_MESSAGE_LENGTH];
-        int prev_pred_fd = 0;
-        short recv_key;
-
-        printf("HANDLING PRED MSG...\n");
-
-        sscanf(msg, "%*s %hd", &recv_key);
-
-        if(recv_key == node->self_key)
-        //I'm the last one!
-        {
-            //Update SUCC & PRED
-            sscanf(msg, "%*s %hd %s %s", &node->pred_key, node->pred_IP, node->pred_Port);
-            prev_pred_fd = node->fd_pred;
-
-            node->succ_key = -1;
-            strcpy(node->succ_IP, "");  
-            strcpy(node->succ_Port, "");
-            close_tcp(&node->fd_pred);
-            close_tcp(&node->fd_succ);         
-
-
-            return;
-        }
-        else
-        {
-            //Update PRED
-            sscanf(msg, "%*s %hd %s %s", &node->pred_key, node->pred_IP, node->pred_Port);
-            prev_pred_fd = node->fd_pred;
-
-            //Send SELF to new PRED
-            node->fd_pred = connect_tcp(node->pred_IP, node->pred_Port);
-            if(node->fd_pred == -1)
-            {
-                perror("CONNECT PRED MSG:");
-                exit(1);
             }
 
-            msg_create(retmsg, "SELF", node);
-
-            write_tcp(&node->fd_pred, retmsg);
-
-            
-            //Close conn. with prev. PRED
-            //sleep(5);
-            //close_tcp(&prev_pred_fd);
-
-            return;
-
         }
 
-    }
-
-    else if(!strcmp("LEAVE", strtok(buffer, " ")))
+        else if(!strcmp("LEAVE", strtok(buffer, " ")))
     //Abstraction workaround, tiddier than sending
     //messages from main
     {
@@ -412,10 +413,19 @@ void msg_handle(char *msg, knot *node)
         
         //Send PRED to SUCC
     }
-    else
+    }
+    else//UDP MESSAGE
     {
-        puts(msg);
-        return;
+        if(0)
+        {
+
+        }
+
+        else
+        {
+            puts(msg);
+            return;
+        }
     }
 
 }
