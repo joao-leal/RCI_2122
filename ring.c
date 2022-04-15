@@ -135,7 +135,7 @@ int main(int argc, char * argv[])
             }
             else if(!strcmp("find", command) || !strcmp("f", command))
             {
-                msg_create(input, "FIND", node);
+                msg_create(input, "FIND", &node);
             }
             else if(!strcmp("leave", command) || !strcmp("l", command))
             {
@@ -155,7 +155,7 @@ int main(int argc, char * argv[])
             {
                 continue;
             }
-        }//STDIN
+        //STDIN
 
         /************************************/
         /*        v     SERVER     v        */

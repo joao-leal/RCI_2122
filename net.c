@@ -74,7 +74,7 @@ void read_udp(int *fd, char *buffer)
     }
 }
 
-void send_udp(int *fd, char *msg)
+void write_udp(int *fd, char *msg)
 {
     socklen_t addrlen;
     struct sockaddr_in addr;

@@ -18,7 +18,7 @@ int find (char message[50], knot *node){
     d2 = ((key - node->succ_key) + 32) % 32;
 
     if (node->short_key == -1) {
-        d3 = 126
+        d3 = 126;
     }else d3 = ((key - node->short_key) + 32) % 32;
 
     if (fields == 2 && !strcmp("EFND",command)){ /*EFND*/
@@ -474,7 +474,7 @@ void msg_handle(char *msg, knot *node)
         else if(!strcmp("PRED", strtok(buffer, " ")))
         {
             char retmsg[MAX_MESSAGE_LENGTH];
-            int prev_pred_fd = 0;
+            //int prev_pred_fd = 0;
             short recv_key;
 
             printf("HANDLING PRED MSG...\n");
@@ -486,7 +486,7 @@ void msg_handle(char *msg, knot *node)
             {
                 //Update SUCC & PRED
                 sscanf(msg, "%*s %hd %s %s", &node->pred_key, node->pred_IP, node->pred_Port);
-                prev_pred_fd = node->fd_pred;
+                //prev_pred_fd = node->fd_pred;
 
                 node->succ_key = -1;
                 strcpy(node->succ_IP, "");
@@ -501,7 +501,7 @@ void msg_handle(char *msg, knot *node)
             {
                 //Update PRED
                 sscanf(msg, "%*s %hd %s %s", &node->pred_key, node->pred_IP, node->pred_Port);
-                prev_pred_fd = node->fd_pred;
+                //prev_pred_fd = node->fd_pred;
 
                 //Send SELF to new PRED
                 node->fd_pred = connect_tcp(node->pred_IP, node->pred_Port);
@@ -534,7 +534,7 @@ void msg_handle(char *msg, knot *node)
         find(msg, node);
     }
     else if(!strcmp("EFND", strtok(buffer, " "))){
-        node->fd_question = node->fd_aux
+        node->fd_question = node->fd_aux;
         find(msg, node);
     }
 
