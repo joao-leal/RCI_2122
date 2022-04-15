@@ -58,7 +58,7 @@ int new_udp(knot *k)
     return fd;
 }
 
-int listen_tcp(char *IP, char *Port)
+int listen_tcp(char *Port)
 {
     int fd = 0, errorcode, reuse = 1;
     struct addrinfo hints, *res;
@@ -74,7 +74,7 @@ int listen_tcp(char *IP, char *Port)
     hints.ai_flags = AI_PASSIVE;                    //TCP Socket
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof reuse);
 
-    errorcode = getaddrinfo(IP, Port, &hints, &res);
+    errorcode = getaddrinfo(MY_INT_IP, Port, &hints, &res);
     if (errorcode != 0)
     { //error 
         fprintf(stderr, "GETADDRINFO ERROR: %s\n", strerror(errno));

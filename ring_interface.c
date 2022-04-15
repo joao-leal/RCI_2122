@@ -295,12 +295,10 @@ void msg_handle(char *msg, knot *node)
 
                 write_tcp(&prev_succ_fd, retmsg);
 
-                sleep(5);
-
 
                 //Close conn. inbetween
                 
-                close_tcp(&prev_succ_fd);
+                //close_tcp(&prev_succ_fd);
 
             }
             else if(recv_key < node->pred_key)
@@ -340,16 +338,21 @@ void msg_handle(char *msg, knot *node)
 
         sscanf(msg, "%*s %hd", &recv_key);
 
-        if(node->succ_key == node->pred_key && node->succ_key != -1 && (recv_key == node->pred_key || recv_key == node->succ_key))
-        //Last 2 nodes in ring (Leave)
+        if(recv_key == node->self_key)
+        //I'm the last one!
         {
-            //Send PRED to last node
-            msg_create(retmsg, "PREDL", node);
+            //Update SUCC & PRED
+            sscanf(msg, "%*s %hd %s %s", &node->pred_key, node->pred_IP, node->pred_Port);
+            prev_pred_fd = node->fd_pred;
 
-            write_tcp(&node->fd_pred, retmsg);
-            
-            //Close conn.
-            //close_tcp(&node->fd_succ);
+            node->succ_key = -1;
+            strcpy(node->succ_IP, "");  
+            strcpy(node->succ_Port, "");
+            close_tcp(&node->fd_pred);
+            close_tcp(&node->fd_succ);         
+
+
+            return;
         }
         else
         {
@@ -385,16 +388,29 @@ void msg_handle(char *msg, knot *node)
     //messages from main
     {
         char retmsg[MAX_MESSAGE_LENGTH];
+        int recv_key = -1;
+
+        sscanf(msg, "%*s %d", &recv_key);
+
+        if(node->succ_key == node->pred_key && node->succ_key != -1 && (recv_key == node->pred_key || recv_key == node->succ_key))
+        //Last 2 nodes in ring (Leave)
+        {
+
+        }
+        else
+        {
+            msg_create(retmsg, "PREDL", node);
+
+            write_tcp(&node->fd_succ, retmsg);
+            
+
+            //Close all conections
+            sleep(5);
+            close_all(node);
+
+        }
         
         //Send PRED to SUCC
-        msg_create(retmsg, "PREDL", node);
-
-        write_tcp(&node->fd_succ, retmsg);
-        
-
-        //Close all conections
-        sleep(5);
-        close_all(node);
     }
     else
     {

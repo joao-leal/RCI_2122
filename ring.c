@@ -41,7 +41,7 @@ int main(int argc, char * argv[])
         node.fd_UDP = new_udp(&node);
 
     if(!node.fd_listen)
-        node.fd_listen = listen_tcp(node.self_IP, node.self_Port);
+        node.fd_listen = listen_tcp(node.self_Port);
     //User Interface
     
     while(1)
@@ -109,6 +109,7 @@ int main(int argc, char * argv[])
                 //printf("\e[1;1H\e[2J");
                 pentry(&node, &pred, pred_IP, pred_Port);
                 printf("EXITED PENTRY\n");
+                
 
                 
             }
@@ -119,7 +120,7 @@ int main(int argc, char * argv[])
             else if(!strcmp("leave", command) || !strcmp("l", command))
             {
                 msg_handle("LEAVE", &node);
-                sleep(3);
+                sleep(1);
                 close_all(&node);
                 FD_ZERO(&read_fds);
                 break;
