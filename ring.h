@@ -80,6 +80,7 @@ typedef struct
 
 
 //Functions Definition
+void menu_dsp();
 void new(knot *); //Creates a new ring with only 1 knot
 void bentry(knot *, short *, char *, char *); //Enters a new knot ?
 void pentry(knot *, short *, char *, char *); // Enters a new knot knowing its predecessor

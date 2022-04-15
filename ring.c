@@ -47,6 +47,7 @@ int main(int argc, char * argv[])
     if(!node.fd_listen)
         node.fd_listen = listen_tcp(node.self_Port);
     //User Interface
+    menu_dsp();
     
     while(1)
     {
@@ -65,7 +66,6 @@ int main(int argc, char * argv[])
         add_active_fds(&node, &read_fds, &max_fd);
     
         
-
         counter = select(max_fd+1, &read_fds, NULL, NULL, &tv);
         if(counter <= 0)
         {
@@ -120,7 +120,13 @@ int main(int argc, char * argv[])
             else if(!strcmp("show", command) || !strcmp("s", command))
             {
                 show(&node);
-            }
+                printf("Type 'q' to go back\n");
+                char c = ' ';
+                while((c = getchar()) != 'q');
+                printf("\e[1;1H\e[2J");
+                menu_dsp();
+
+            }   
             else if(!strcmp("leave", command) || !strcmp("l", command))
             {
                 msg_handle("LEAVE", &node);

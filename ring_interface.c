@@ -1,15 +1,37 @@
 #include "ring.h"
 
 
+void menu_dsp()
+{
+printf("╔═══════════════════════════════════════════════════════════════════════════╗\n\
+║                               RING DATABASE                               ║\n\
+╠═══════════════════════════════════════════════════════════════════════════╣\n\
+║ n, new    - creates a new ring with one node                              ║\n\
+║                                                                           ║\n\
+║ p, pentry - enters the ring with a known predecessor (i, i.IP, i.Port)    ║\n\
+║                                                                           ║\n\
+║ b, bentry - enters the ring through one known node (b, b.IP, b.Port)      ║\n\
+║                                                                           ║\n\
+║ s, show   - shows the state of the current node                           ║\n\
+║                                                                           ║\n\
+║ f, find   - finds the key requested by the user                           ║\n\
+║                                                                           ║\n\
+║ l, leave  - leaves the ring                                               ║\n\
+║                                                                           ║\n\
+║ e, exit   - closes program                                                ║\n\
+╚═══════════════════════════════════════════════════════════════════════════╝\n");
+}
+
 void new(knot *host)
 {
+    
     //Creates a knot which is its own predecessor and successor
 
     host->pred_key = host->self_key;
     strcpy(host->pred_IP, host->self_IP);
     strcpy(host->pred_Port, host->self_Port);
 
-    printf("CREATING NEW RING...\n");
+    printf("CREATED NEW RING!\n");
     
 
     
@@ -19,7 +41,7 @@ void show(knot *node)
 {
     printf("\e[1;1H\e[2J");
 
-    printf("NODE:\t %d\tIP: %s\tPORT: %s\n", node->self_key, node->self_IP, node->self_Port);
+    printf("NODE:\t\t %d\tIP: %s\tPORT: %s\n", node->self_key, node->self_IP, node->self_Port);
 
     //if the knot doesn't have a succesor then it's alone in the ring!
     if(!strcmp(node->succ_IP, "") && !strcmp(node->pred_IP, ""))
