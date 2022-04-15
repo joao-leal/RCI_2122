@@ -16,7 +16,9 @@ int main(int argc, char * argv[])
     node.fd_aux = -1;
     node.fd_pred = -1;
     node.fd_succ = -1;
-
+    for (int p=0; p < 100; p++){
+        node.seq [p] = 0;
+    }
 
     //Prevents SIGPIPE Signal
     struct sigaction act;
