@@ -6,7 +6,8 @@
 
 #define MAX_BACKLOG 4
 
-int new_udp(knot *);
+int new_udp(knot *, struct sockaddr_in *, socklen_t *);
+void read_udp(int *, char *);
 int listen_tcp(char *);
 int connect_tcp(char *, char*);
 int accept_tcp(int *);

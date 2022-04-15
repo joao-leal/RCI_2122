@@ -38,7 +38,9 @@ int main(int argc, char * argv[])
     printf("KEY: \t %d\nIP: \t %s\nPORT: \t %s\n", node.self_key, node.self_IP, node.self_Port);
     
     if(!node.fd_UDP)
-        node.fd_UDP = new_udp(&node);
+        socklen_t *addrlen;
+        struct sockaddr_in *addr;
+        node.fd_UDP = new_udp(&node, &addr, &addrlen);
 
     if(!node.fd_listen)
         node.fd_listen = listen_tcp(node.self_Port);
@@ -230,6 +232,10 @@ int main(int argc, char * argv[])
 
         }
 
+        if(node.fd_UDP > 0 && FD_ISSET(node.fd_UDP, &read_fds))
+        {
+
+        }
         /* if(node.fd_short && FD_ISSET(node.fd_short, &read_fds))
         {
             continue;

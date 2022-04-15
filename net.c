@@ -1,7 +1,7 @@
 #include "net.h"
 
 
-int new_udp(knot *k)
+int new_udp(knot *k, struct sockaddr_in *addr, socklen_t* addrlen)
 {
     //Creates a new UDP server
     struct addrinfo hints, *res;
@@ -56,6 +56,11 @@ int new_udp(knot *k)
     freeaddrinfo(res);
 
     return fd;
+}
+
+void read_udp(int *fd, char *buffer)
+{
+
 }
 
 int listen_tcp(char *Port)
