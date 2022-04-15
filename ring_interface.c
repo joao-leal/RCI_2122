@@ -152,11 +152,14 @@ void msg_create(char *msg, char mode[5], knot *node)
     {
         sprintf(msg, "SELF %d %s %s\n", node->self_key, node->self_IP, node->self_Port);
     }
-
     //Type PRED
-    if(!strcmp(mode, "PRED"))
+    else if(!strcmp(mode, "PRED"))
         sprintf(msg, "PRED %d %s %s\n", node->succ_key, node->succ_IP, node->succ_Port);
-
+    //Type PRED for leave
+    else if(!strcmp(mode, "PREDL"))
+    {
+        sprintf(msg, "PRED %d %s %s\n", node->pred_key, node->pred_IP, node->pred_Port);
+    }
 }
 
 void msg_handle(char *msg, knot *node)
@@ -187,7 +190,7 @@ void msg_handle(char *msg, knot *node)
             //I'm PRED to node but alone in the ring
             if(node->self_key == node->pred_key && node->succ_key == -1)
             {
-                //Update my SUCC
+                //Update SUCC
                 sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
                 node->fd_succ = node->fd_aux;
                 node->fd_aux = -1;
@@ -219,7 +222,7 @@ void msg_handle(char *msg, knot *node)
 
                 write_tcp(&prev_succ_fd, retmsg);
 
-                sleep(3);
+                //sleep(5);
 
                 //Close previous SUCC conn.
                 //close_tcp(&prev_succ_fd);
@@ -245,6 +248,14 @@ void msg_handle(char *msg, knot *node)
                 sleep(1);
                 close_tcp(&node->fd_aux);
             }
+            else if(recv_key > node->succ_key)
+            //It means my SUCC wants to leave
+            {
+                //Update SUCC
+                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                node->fd_succ = node->fd_aux;
+                node->fd_aux = -1;
+            }
         }
         else if(recv_key < node->self_key)
         {
@@ -264,6 +275,43 @@ void msg_handle(char *msg, knot *node)
                 sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
                 node->fd_succ = node->fd_aux;
                 node->fd_aux = -1;
+            }
+            else if(recv_key < node->succ_key)
+            //Node wants to enter through the end
+            //(I'm the biggest key node))
+            {
+                //Normal entry(?)
+                int prev_succ_fd;
+
+                //Update SUCC
+                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                prev_succ_fd = node->fd_succ;
+                node->fd_succ = node->fd_aux;
+                node->fd_aux = -1;
+                
+
+                //Send PRED to prev. SUCC
+                msg_create(retmsg, "PRED", node);
+
+                write_tcp(&prev_succ_fd, retmsg);
+
+                sleep(5);
+
+
+                //Close conn. inbetween
+                
+                close_tcp(&prev_succ_fd);
+
+            }
+            else if(recv_key < node->pred_key)
+            {
+                //Update SUCC
+                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                node->fd_succ = node->fd_aux;
+                node->fd_aux = -1;
+
+                return;
+
             }
             else
             //This can't happen! I can't be PRED to a
@@ -285,34 +333,69 @@ void msg_handle(char *msg, knot *node)
     else if(!strcmp("PRED", strtok(buffer, " ")))
     {
         char retmsg[MAX_MESSAGE_LENGTH];
-        int prev_pred_fd;
+        int prev_pred_fd = 0;
+        short recv_key;
 
         printf("HANDLING PRED MSG...\n");
 
-        //Update PRED
-        sscanf(msg, "%*s %hd %s %s", &node->pred_key, node->pred_IP, node->pred_Port);
-        prev_pred_fd = node->fd_pred;
+        sscanf(msg, "%*s %hd", &recv_key);
 
-        //Send SELF to new PRED
-        node->fd_pred = connect_tcp(node->pred_IP, node->pred_Port);
-        if(node->fd_pred == -1)
+        if(node->succ_key == node->pred_key && node->succ_key != -1 && (recv_key == node->pred_key || recv_key == node->succ_key))
+        //Last 2 nodes in ring (Leave)
         {
-            perror("CONNECT PRED MSG:");
-            exit(1);
+            //Send PRED to last node
+            msg_create(retmsg, "PREDL", node);
+
+            write_tcp(&node->fd_pred, retmsg);
+            
+            //Close conn.
+            //close_tcp(&node->fd_succ);
+        }
+        else
+        {
+            //Update PRED
+            sscanf(msg, "%*s %hd %s %s", &node->pred_key, node->pred_IP, node->pred_Port);
+            prev_pred_fd = node->fd_pred;
+
+            //Send SELF to new PRED
+            node->fd_pred = connect_tcp(node->pred_IP, node->pred_Port);
+            if(node->fd_pred == -1)
+            {
+                perror("CONNECT PRED MSG:");
+                exit(1);
+            }
+
+            msg_create(retmsg, "SELF", node);
+
+            write_tcp(&node->fd_pred, retmsg);
+
+            
+            //Close conn. with prev. PRED
+            //sleep(5);
+            //close_tcp(&prev_pred_fd);
+
+            return;
+
         }
 
-        msg_create(retmsg, "SELF", node);
-
-        write_tcp(&node->fd_pred, retmsg);
-
-        sleep(1);
-
-        //Close conn. with prev. PRED
-        //close_tcp(&prev_pred_fd);
-
-        return;
     }
 
+    else if(!strcmp("LEAVE", strtok(buffer, " ")))
+    //Abstraction workaround, tiddier than sending
+    //messages from main
+    {
+        char retmsg[MAX_MESSAGE_LENGTH];
+        
+        //Send PRED to SUCC
+        msg_create(retmsg, "PREDL", node);
+
+        write_tcp(&node->fd_succ, retmsg);
+        
+
+        //Close all conections
+        sleep(5);
+        close_all(node);
+    }
     else
     {
         puts(msg);

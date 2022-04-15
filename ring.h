@@ -47,6 +47,12 @@ typedef struct
     char short_Port[PORT_SIZE];
     int fd_short;
 
+    //Question
+    short find_key;
+    char question_IP[IP_SIZE];
+    char question_Port[PORT_SIZE];
+    int fd_question;
+
     //File Descriptors
     int fd_listen;
     int fd_UDP; 

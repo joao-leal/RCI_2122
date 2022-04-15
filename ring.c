@@ -52,7 +52,7 @@ int main(int argc, char * argv[])
 
         struct timeval tv;
 
-        tv.tv_sec = 60;
+        tv.tv_sec = 120;
 
         //printf("LOOP\n");
         
@@ -114,9 +114,15 @@ int main(int argc, char * argv[])
             }
             else if(!strcmp("show", command) || !strcmp("s", command))
             {
-                
                 show(&node);
-                
+            }
+            else if(!strcmp("leave", command) || !strcmp("l", command))
+            {
+                msg_handle("LEAVE", &node);
+                sleep(3);
+                close_all(&node);
+                FD_ZERO(&read_fds);
+                break;
             }
             else if(!strcmp("exit", command) || !strcmp("e", command))
             {
@@ -160,9 +166,9 @@ int main(int argc, char * argv[])
             node.fd_aux = 0; */
 
             show(&node);
-            // sleep(2);
 
-            //FD_CLR(node.fd_aux, &read_fds);
+            // sleep(2);
+            //FD_ZERO(&read_fds);
             continue;
 
 
@@ -188,8 +194,11 @@ int main(int argc, char * argv[])
             msg_handle(buffer, &node);
         
             show(&node);
-            printf("FD PRED: %d\nFD SUCC: %d\nFD AUX: %d\n", node.fd_pred, node.fd_succ, node.fd_aux);
+           
             // sleep(2);
+
+            //FD_ZERO(&read_fds);
+
 
             continue;
 
@@ -211,8 +220,10 @@ int main(int argc, char * argv[])
 
 
             show(&node);
-            printf("FD PRED: %d\nFD SUCC: %d\nFD AUX: %d\n", node.fd_pred, node.fd_succ, node.fd_aux);
+
             // sleep(2);
+
+            //FD_ZERO(&read_fds);
 
             continue;
 
