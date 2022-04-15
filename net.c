@@ -186,6 +186,9 @@ void read_tcp(int *fd, char *buffer)
 
         strcat(aux, buffer);
     }while(!strstr(buffer, "\n"));
+
+    // puts(buffer);
+    // puts(aux);
 }
 
 void close_tcp(int *fd){

@@ -52,9 +52,10 @@ int main(int argc, char * argv[])
 
         struct timeval tv;
 
-        tv.tv_sec = 30;
+        tv.tv_sec = 60;
 
         //printf("LOOP\n");
+        
         
         //Adds the active file descriptors for TCP & UDP connections and for the STDIN to the read set
         add_active_fds(&node, &read_fds, &max_fd);
@@ -138,11 +139,12 @@ int main(int argc, char * argv[])
 
             node.fd_aux = accept_tcp(&node.fd_listen);
             printf("CONNECTED\n");
+
             
         }//fd_listen
 
         //Incoming message from some node
-        if(node.fd_aux && FD_ISSET(node.fd_aux, &read_fds))
+        if(node.fd_aux > 0 && FD_ISSET(node.fd_aux, &read_fds))
         {
             char buffer[MAX_MESSAGE_LENGTH];
 
@@ -152,17 +154,22 @@ int main(int argc, char * argv[])
             //We have to handle the message
             msg_handle(buffer, &node);
 
-            FD_CLR(node.fd_aux, &read_fds);
-            node.fd_aux = 0;
+            strcpy(buffer, "");
+
+            /* FD_CLR(node.fd_aux, &read_fds);
+            node.fd_aux = 0; */
 
             show(&node);
             // sleep(2);
+
+            //FD_CLR(node.fd_aux, &read_fds);
+            continue;
 
 
         }//fd_aux
 
         //Incoming message from PRED
-        if(node.fd_pred && FD_ISSET(node.fd_pred, &read_fds))
+        if(node.fd_pred > 0 && FD_ISSET(node.fd_pred, &read_fds))
         {
             char buffer[MAX_MESSAGE_LENGTH];
 
@@ -170,43 +177,51 @@ int main(int argc, char * argv[])
 
             read_tcp(&node.fd_pred, buffer);
             printf("RECEIVED FROM PRED:\t%s\n", buffer);
+            if(strstr(buffer, "!"))
+            {
+                printf("Bye!\n");
+                close_tcp(&node.fd_pred);
+                exit(0);
+            }
 
             //We have to handle the message
             msg_handle(buffer, &node);
         
-            FD_CLR(node.fd_pred, &read_fds);
-
             show(&node);
+            printf("FD PRED: %d\nFD SUCC: %d\nFD AUX: %d\n", node.fd_pred, node.fd_succ, node.fd_aux);
             // sleep(2);
 
+            continue;
 
         }
 
         //Incoming message from SUCC
-        if(node.fd_succ && FD_ISSET(node.fd_succ, &read_fds))
+        if(node.fd_succ > 0 && FD_ISSET(node.fd_succ, &read_fds))
         {
             char buffer[MAX_MESSAGE_LENGTH];
 
             printf("Incoming from SUCC\n");
-            read_tcp(&node.fd_aux, buffer);
+            read_tcp(&node.fd_succ, buffer);
             printf("RECEIVED FROM SUCC:\t%s\n", buffer);
 
             //We have to handle the message
             msg_handle(buffer, &node); 
 
-            FD_CLR(node.fd_succ, &read_fds);
+            strcpy(buffer, "");
+
 
             show(&node);
+            printf("FD PRED: %d\nFD SUCC: %d\nFD AUX: %d\n", node.fd_pred, node.fd_succ, node.fd_aux);
             // sleep(2);
 
-
+            continue;
 
         }
 
-        if(node.fd_short && FD_ISSET(node.fd_short, &read_fds))
+        /* if(node.fd_short && FD_ISSET(node.fd_short, &read_fds))
         {
             continue;
-        }
+        } */
 
     }//while
 
