@@ -40,9 +40,7 @@ int main(int argc, char * argv[])
     printf("KEY: \t %d\nIP: \t %s\nPORT: \t %s\n", node.self_key, node.self_IP, node.self_Port);
     
     if(!node.fd_UDP)
-        socklen_t *addrlen;
-        struct sockaddr_in *addr;
-        node.fd_UDP = new_udp(&node, &addr, &addrlen);
+        node.fd_UDP = new_udp(node.self_Port);
 
     if(!node.fd_listen)
         node.fd_listen = listen_tcp(node.self_Port);

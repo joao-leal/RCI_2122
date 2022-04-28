@@ -1,7 +1,7 @@
 #include "net.h"
 
 
-int new_udp(knot *k, struct sockaddr_in *addr, socklen_t* addrlen)
+int new_udp(char *u_PORT)
 {
     //Creates a new UDP server
     struct addrinfo hints, *res;
@@ -22,11 +22,17 @@ int new_udp(knot *k, struct sockaddr_in *addr, socklen_t* addrlen)
     hints.ai_socktype = SOCK_DGRAM; //UDP socket
     hints.ai_flags = AI_PASSIVE;
 
-    if((errorcode = getaddrinfo(NULL, k->self_Port, &hints, &res)) != 0)
+    if((errorcode = getaddrinfo(NULL, u_PORT, &hints, &res)) != 0)
+    {
+        perror("GET ADDR");
         exit(1);
+    }
 
     if(bind(fd, res->ai_addr, res->ai_addrlen) == -1)
+    {
+        perror("BIND UDP");
         exit(1);
+    }    
 
     // printf("Listening on port %s...\n", k->self_Port);
 
@@ -60,7 +66,34 @@ int new_udp(knot *k, struct sockaddr_in *addr, socklen_t* addrlen)
 
 void read_udp(int *fd, char *buffer)
 {
+    socklen_t addrlen;
+    struct sockaddr_in addr;
+    ssize_t n;
 
+    addrlen = sizeof(addr);
+
+    n = recvfrom(*fd, buffer, MAX_MESSAGE_LENGTH, 0, (struct sockaddr*)&addr, &addrlen);
+    if(n == -1)
+    {
+        perror("recvfrom");
+        exit(1);
+    }
+}
+
+void send_udp(int *fd, char *msg)
+{
+    socklen_t addrlen;
+    struct sockaddr_in addr;
+    ssize_t n;
+
+    addrlen = sizeof(addr);
+
+    n = sendto(*fd, msg, strlen(msg), 0, (struct sockaddr*)&addr, addrlen);
+    if(n == -1)
+    {
+        perror("recvfrom");
+        exit(1);
+    }
 }
 
 int listen_tcp(char *Port)

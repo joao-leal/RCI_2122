@@ -18,8 +18,8 @@
 #define IP_SIZE 50
 #define PORT_SIZE 6
 #define MAX_MESSAGE_LENGTH 128
-#define MY_INT_IP "192.168.1.80"
-#define MY_EXT_IP "85.243.0.129"
+#define MY_INT_IP NULL
+#define MY_EXT_IP NULL
 #define max(A,B) ((A)>=(B)?(A):(B))
 
 
