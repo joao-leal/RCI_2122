@@ -333,7 +333,7 @@ void msg_handle(char *msg, knot *node)
                 write_tcp(&node->fd_succ, retmsg);
                 return;
             }
-            else if(node->succ_key != -1)
+            else if(node->succ_key != -1 && recv_key != node->pred_key)
                 //I'm PRED to node entering normal ring
             {
                 int prev_succ_fd = -1;
@@ -350,6 +350,7 @@ void msg_handle(char *msg, knot *node)
                 write_tcp(&prev_succ_fd, retmsg);
 
                 //sleep(5);
+                //sleep(1);
 
                 //Close previous SUCC conn.
                 //close_tcp(&prev_succ_fd);
@@ -372,8 +373,8 @@ void msg_handle(char *msg, knot *node)
             {
                 //Can't connect, bye!
                 write_tcp(&node->fd_aux, "Same key as my successor, try another!\n");
-                sleep(1);
-                close_tcp(&node->fd_aux);
+                // sleep(1);
+                // close_tcp(&node->fd_aux);
             }
             else if(recv_key > node->succ_key)
                 //It means my SUCC wants to leave
@@ -395,13 +396,33 @@ void msg_handle(char *msg, knot *node)
 
                 return;
             }
-                //My new SUCC wants to inform me
-            else if(node->succ_key == -1)
+            //I'm alone in the ring and the entering node has a lower key than mine
+            else if(node->succ_key == -1 && node->self_key == node->pred_key)
             {
                 //Update SUCC
                 sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
                 node->fd_succ = node->fd_aux;
                 node->fd_aux = -1;
+
+                //PRED = SUCC
+                node->pred_key = node->succ_key;
+                strcpy(node->pred_IP, node->succ_IP);
+                strcpy(node->pred_Port, node->succ_Port);
+
+                //Send SELF to PRED (through fd_succ)
+                msg_create(retmsg, "SELF", node);
+
+                write_tcp(&node->fd_succ, retmsg);
+                return;
+            }
+            //My new SUCC wants to inform me
+            else if(node->succ_key == -1)
+            {
+                sscanf(msg, "%*s %hd %s %s", &node->succ_key, node->succ_IP, node->succ_Port);
+                node->fd_succ = node->fd_aux;
+                node->fd_aux = -1;
+
+                return;
             }
             else if(recv_key < node->succ_key)
                 //Node wants to enter through the end
@@ -424,8 +445,9 @@ void msg_handle(char *msg, knot *node)
 
 
                 //Close conn. inbetween
+                // sleep(1);
 
-                //close_tcp(&prev_succ_fd);
+                // close_tcp(&prev_succ_fd);
 
             }
             else if(recv_key < node->pred_key)
@@ -445,7 +467,7 @@ void msg_handle(char *msg, knot *node)
                 //Can't have a key lower than mine, bye!
                 printf("KEY IS LOWER THAN MINE\n");
                 write_tcp(&node->fd_aux, "Your key is lower than mine!\n");
-                sleep(3);
+                sleep(1);
                 close_tcp(&node->fd_aux);
                 node->fd_aux = -1;
 
@@ -459,6 +481,7 @@ void msg_handle(char *msg, knot *node)
     {
         char retmsg[MAX_MESSAGE_LENGTH], recv_ip[IP_SIZE], recv_port[PORT_SIZE];
         short recv_key;
+        // int prev_pred_fd;
 
         printf("HANDLING PRED MSG...\n");
 
@@ -472,15 +495,16 @@ void msg_handle(char *msg, knot *node)
             //prev_pred_fd = node->fd_pred;
 
             node->succ_key = -1;
-            node->fd_pred = -1;
-            node->fd_succ = -1;
             strcpy(node->pred_IP, "");  
             strcpy(node->pred_IP, "");  
             strcpy(node->succ_IP, "");  
             strcpy(node->succ_Port, "");
+
             // close_tcp(&node->fd_pred);
             // close_tcp(&node->fd_succ);         
 
+            node->fd_pred = -1;
+            node->fd_succ = -1;
 
             return;
         }
@@ -488,7 +512,7 @@ void msg_handle(char *msg, knot *node)
         {
             //My PRED wants to leave the ring
 
-            close(node->fd_pred);
+            close_tcp(&node->fd_pred);
             node->fd_pred = connect_tcp(recv_ip, recv_port);
             node->pred_key = recv_key;
             strcpy(node->pred_IP, recv_ip);
@@ -503,7 +527,7 @@ void msg_handle(char *msg, knot *node)
         {
             close_tcp(&node->fd_succ);
         } */
-        else
+        else if(recv_key != node->pred_key)
         {
             //Update PRED
             sscanf(msg, "%*s %hd %s %s", &node->pred_key, node->pred_IP, node->pred_Port);
@@ -523,8 +547,9 @@ void msg_handle(char *msg, knot *node)
 
 
             //Close conn. with prev. PRED
-            //sleep(5);
-            //close_tcp(&prev_pred_fd);
+            // sleep(1);
+
+            // close_tcp(&prev_pred_fd);
 
             return;
 

@@ -228,14 +228,13 @@ int main(int argc, char * argv[])
         {
             char buffer[MAX_MESSAGE_LENGTH];
 
-            printf("Incoming from SUCC\n");
+            //printf("Incoming from SUCC\n");
             read_tcp(&node.fd_succ, buffer);
-            printf("RECEIVED FROM SUCC:\t%s\n", buffer);
+            //printf("RECEIVED FROM SUCC:\t%s\n", buffer);
 
             //We have to handle the message
             msg_handle(buffer, &node); 
 
-            strcpy(buffer, "");
 
 
             show(&node);

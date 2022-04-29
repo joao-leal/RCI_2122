@@ -227,11 +227,13 @@ void read_tcp(int *fd, char *buffer)
         if(nread == 0)
         {
             close(*fd);
+            *fd = -1;
             break;
         }
             
 
         strcat(aux, buffer);
+        printf("2");
     }while(!strstr(buffer, "\n"));
 
     // puts(buffer);
