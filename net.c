@@ -224,6 +224,12 @@ void read_tcp(int *fd, char *buffer)
             fprintf(stderr, "READ ERROR: %s\n", strerror(errno));
             exit(1);
         }
+        if(nread == 0)
+        {
+            close(*fd);
+            break;
+        }
+            
 
         strcat(aux, buffer);
     }while(!strstr(buffer, "\n"));

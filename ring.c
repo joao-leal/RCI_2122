@@ -52,9 +52,9 @@ int main(int argc, char * argv[])
         char input[MAX_MESSAGE_LENGTH] = "", command[COMMAND_LENGTH] = "";
         int counter = 0;
 
-        struct timeval tv;
+        //struct timeval tv;
 
-        tv.tv_sec = 120;
+        //tv.tv_sec = 120;
 
         //printf("LOOP\n");
         
@@ -62,9 +62,9 @@ int main(int argc, char * argv[])
         //Adds the active file descriptors for TCP & UDP connections and for the STDIN to the read set
         add_active_fds(&node, &read_fds, &max_fd);
     
-        
+        //printf("PRED_FD: %d\tSUCC_FD: %d\tLISTEN_FD: %d\n", node.fd_pred, node.fd_succ, node.fd_listen);
 
-        counter = select(max_fd+1, &read_fds, NULL, NULL, &tv);
+        counter = select(max_fd+1, &read_fds, NULL, NULL, NULL);
         if(counter <= 0)
         {
             perror("select");
@@ -122,10 +122,26 @@ int main(int argc, char * argv[])
             else if(!strcmp("leave", command) || !strcmp("l", command))
             {
                 msg_handle("LEAVE", &node);
-                sleep(1);
-                close_all(&node);
-                FD_ZERO(&read_fds);
-                break;
+
+                sleep(2);
+                close_tcp(&node.fd_pred);
+                node.fd_pred = -1;
+                
+                close_tcp(&node.fd_succ);
+                node.fd_succ = -1;
+
+                //Resets PRED and SUCC
+                node.pred_key = -1;
+                node.succ_key = -1;
+
+                strcpy(node.pred_IP, "");
+                strcpy(node.pred_Port, "");
+                strcpy(node.succ_IP, "");
+                strcpy(node.succ_Port, "");
+
+                show(&node);
+
+                continue;
             }
             else if(!strcmp("exit", command) || !strcmp("e", command))
             {

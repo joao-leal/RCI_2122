@@ -24,7 +24,7 @@ void show(knot *node)
     //if the knot doesn't have a succesor then it's alone in the ring!
     if(!strcmp(node->succ_IP, "") && !strcmp(node->pred_IP, ""))
     {
-        printf("NODE IS ALONE IN THE RING.\n\n");
+        printf("NODE IS NOT IN A RING.\n\n");
         return;
     }
     else if(strcmp(node->succ_IP, ""))
@@ -87,37 +87,37 @@ void add_active_fds(knot *node, fd_set *read_fds, int *max_fd)
     FD_SET(STDIN_FILENO, read_fds);
     *max_fd = STDIN_FILENO;
 
-    if(node->fd_listen)
+    if(node->fd_listen > 0)
     {
         FD_SET(node->fd_listen, read_fds);
         *max_fd = max(node->fd_listen, *max_fd);
     }
 
-    if(node->fd_aux)
+    if(node->fd_aux > 0)
     {
         FD_SET(node->fd_aux, read_fds);
         *max_fd = max(node->fd_aux, *max_fd);
     }
 
-    if(node->fd_pred)
+    if(node->fd_pred > 0)
     {
         FD_SET(node->fd_pred, read_fds);
         *max_fd = max(node->fd_pred, *max_fd);
     }
 
-    if(node->fd_succ)
+    if(node->fd_succ > 0)
     {
         FD_SET(node->fd_succ, read_fds);
         *max_fd = max(node->fd_succ, *max_fd);
     }
 
-    if(node->fd_short)
+    if(node->fd_short > 0)
     {
         FD_SET(node->fd_short, read_fds);
         *max_fd = max(node->fd_short, *max_fd);
     }
 
-    if(node->fd_UDP)
+    if(node->fd_UDP > 0)
     {
         FD_SET(node->fd_UDP, read_fds);
         *max_fd = max(node->fd_UDP, *max_fd);
@@ -457,12 +457,12 @@ void msg_handle(char *msg, knot *node)
 
     else if(!strcmp("PRED", strtok(buffer, " ")))
     {
-        char retmsg[MAX_MESSAGE_LENGTH];
+        char retmsg[MAX_MESSAGE_LENGTH], recv_ip[IP_SIZE], recv_port[PORT_SIZE];
         short recv_key;
 
         printf("HANDLING PRED MSG...\n");
 
-        sscanf(msg, "%*s %hd", &recv_key);
+        sscanf(msg, "%*s %hd %s %s", &recv_key, recv_ip, recv_port);
 
         if(recv_key == node->self_key)
         //I'm the last one!
@@ -472,14 +472,37 @@ void msg_handle(char *msg, knot *node)
             //prev_pred_fd = node->fd_pred;
 
             node->succ_key = -1;
+            node->fd_pred = -1;
+            node->fd_succ = -1;
+            strcpy(node->pred_IP, "");  
+            strcpy(node->pred_IP, "");  
             strcpy(node->succ_IP, "");  
             strcpy(node->succ_Port, "");
-            close_tcp(&node->fd_pred);
-            close_tcp(&node->fd_succ);         
+            // close_tcp(&node->fd_pred);
+            // close_tcp(&node->fd_succ);         
 
 
             return;
         }
+        else if(recv_key < node->pred_key)
+        {
+            //My PRED wants to leave the ring
+
+            close(node->fd_pred);
+            node->fd_pred = connect_tcp(recv_ip, recv_port);
+            node->pred_key = recv_key;
+            strcpy(node->pred_IP, recv_ip);
+            strcpy(node->pred_Port, recv_port);
+
+            msg_create(retmsg, "SELF", node);
+            write_tcp(&node->fd_pred, retmsg);
+
+            return;
+        }
+        /* else if(recv_key == node->succ_key)
+        {
+            close_tcp(&node->fd_succ);
+        } */
         else
         {
             //Update PRED
@@ -536,11 +559,8 @@ void msg_handle(char *msg, knot *node)
             msg_create(retmsg, "PREDL", node);
 
             write_tcp(&node->fd_succ, retmsg);
-            
 
-            //Close all conections
-            sleep(5);
-            close_all(node);
+            return;
 
         }
 
