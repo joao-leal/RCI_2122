@@ -80,7 +80,7 @@ void read_udp(int *fd, char *buffer)
     }
 }
 
-void send_udp(int *fd, char *msg)
+void write_udp(int *fd, char *msg)
 {
     socklen_t addrlen;
     struct sockaddr_in addr;
@@ -179,6 +179,7 @@ int connect_tcp(char *i_IP, char *i_Port)
 
 void write_tcp(int *fd, char *message)
 {
+   //printf("writing tcp %s\n",message);
     ssize_t nbytes, nwritten;
 
     nbytes = strlen(message);

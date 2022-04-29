@@ -1,5 +1,125 @@
 #include "ring.h"
+#include "net.h"
 
+//kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
+int find (char message[50], knot *node){
+
+
+
+    int key, find_id = -1, source_find_key = -1, fields, i;
+    char command[4] = "",  ip[50] = "", port[10] = "";
+    double d1, d2, d3;
+    char out_message[100];
+
+    fields = sscanf(message, "%s %i %i %i %s %s", command, &key, &find_id, &source_find_key, ip, port);
+
+    //printf("command: %s\nkey: %i\nfind id: %i\nsource key: %i\nsource ip: %s\nsource port: %s\n", command, key, find_id, source_find_key, ip, port);
+
+    if (key > 31 || key < 0 || find_id > 99 || find_id < -1 || source_find_key > 31 || source_find_key < -1){
+        printf("Erro nos valores do comando\n");
+        return(1);
+    }
+
+    d1 = ((key - node->self_key) + 32) % 32;
+    printf("d1: %lf\n", d1);
+    d2 = ((key - node->succ_key) + 32) % 32;
+    printf("d2: %lf\n", d2);
+    if (node->short_key == -1) {
+        d3 = 126;
+    }else d3 = ((key - node->short_key) + 32) % 32;
+    printf("d3: %lf\n", d3);
+    //printf("%i\n",node->seq[find_id]);
+
+    if (fields == 2 && !strcmp("EFND",command)){ /*EFND*/
+
+        if(key - node->succ_key == 1){
+            printf("A chave esta logo a seguir ao sucessor\n");
+            snprintf(out_message, sizeof (out_message), "EPRED %i %s %s", node->succ_key, node->succ_IP, node->succ_Port);/*pred e o sucessor*/
+            printf("%s", out_message);
+            write_udp(&node->fd_question, out_message);/*mensagem EPRED como o sucessor sendo o predecessor - UDP*/
+            return (0);
+        }
+
+        if (d1 < d2 && d1 < d3){
+            snprintf(out_message, sizeof (out_message), "EPRED %i %s %s", key, node->self_IP, node->self_Port);
+            printf("%s", out_message);
+            write_udp(&node->fd_question, out_message); /*mensagem EPRED como o proprio sendo o predecessor - UDP*/
+        }else if(d3 < d1 && d3 < d2){
+
+            for (i=0; find_id == -1; i++){ //gerar e gravar find id para quando voltar a resposta
+                if (node->seq[i] == 0){
+                    node->seq[i] = 1;
+                    find_id = i;
+                }
+            }
+            snprintf(out_message, sizeof (out_message), "FND %i %i %i %s %s", key, find_id, node->self_key, node->self_IP, node-> self_Port);
+            printf("%s", out_message);
+            write_udp(&node->fd_succ, out_message);/*mensagem FND para o atalho - UDP*/
+        }else {
+            for (i=0; find_id == -1; i++){ //gerar e gravar find id para quando voltar a resposta
+                if (node->seq[i] == 0){
+                    node->seq[i] = 1;
+                    find_id = i;
+                }
+            }
+            snprintf(out_message, sizeof (out_message), "FND %i %i %i %s %s\n", key, find_id, node->self_key, node->self_IP, node-> self_Port); /*mensagem FND para o no sucessor - TCP*/
+            printf("%s", out_message);
+            write_tcp(&node->fd_succ, out_message);
+        }
+
+    }else if (fields == 6 && !strcmp("FND",command) && find_id != -1 && source_find_key != -1){ /*Find normal*/
+
+        if (d1 < d2 && d1 < d3) {
+            // nao inicializou a pesquisa n precisa de gravar find id
+            snprintf(out_message, sizeof (out_message), "RSP %i %i %i %s %s\n", source_find_key, find_id, node->self_key, node->self_IP, node->self_Port); /*mensagem RSP para a mesma funcao*/
+            printf("%s\n", out_message);
+            find(out_message, node);
+
+        }else if(d3 < d1 && d3 < d2){
+            // nao inicializou a pesquisa n precisa de gravar find id
+            snprintf(out_message, sizeof (out_message), "FND %i %i %i %s %s", key, find_id, source_find_key, ip, port); /*mensagem FND para o atalho - UDP*/
+            printf("%s", out_message);
+            write_udp(&node->fd_short, out_message);
+        }else {
+            // nao inicializou a pesquisa n precisa de gravar find id
+            snprintf(out_message, sizeof (out_message), "FND %i %i %i %s %s\n", key, find_id, source_find_key, ip, port); /*mensagem FND para o no sucessor - TCP*/
+            printf("%s", out_message);
+            write_tcp(&node->fd_succ, out_message);
+        }
+
+    }else if (fields == 6 && !strcmp("RSP",command) && find_id != -1 && source_find_key != -1){ /*Resposta do find*/
+        if (d1 < d2 && d1 < d3) {
+            if (key != node->self_key){
+                printf("No que gerou procura saiu");
+                return(1);
+            }
+            // no que coresponde ao find id bentry ou find?
+            if (node->seq[find_id] == 2){
+                (printf("Chave x: no %i (ip:%s port:%s)\n", source_find_key, ip, port)); /*mensagem de resposta na interface e fecha conexao*/
+            }else if (node->seq[find_id] == 1){
+                snprintf(out_message, sizeof (out_message), "EPRED %i %s %s", key, ip, port);
+                write_udp(&node->fd_question, out_message);
+            }else printf("nao e find nem bentry");
+
+        }else if(d3 < d1 && d3 < d2){
+            // nao inicializou a pesquisa n precisa de gravar find id
+            snprintf(out_message, sizeof (out_message), "RSP %i %i %i %s %s", key, find_id, source_find_key, ip, port); /*mensagem RSP para o atalho - UDP*/
+            printf("%s", out_message);
+            write_udp(&node->fd_short, out_message);
+        }else {
+            // nao inicializou a pesquisa n precisa de gravar find id
+            snprintf(out_message, sizeof (out_message), "RSP %i %i %i %s %s\n", key, find_id, source_find_key, ip, port); /*mensagem RSP para o no sucessor - TCP*/
+            printf("%s", out_message);
+            write_tcp(&node->fd_succ, out_message);
+        }
+
+    }else{
+        printf("Erro no numero de argumentos do comando ou numero do id ou source_key\n");
+        return(1);
+    }
+    printf("Left find\n");
+    return(0);
+}
 
 void new(knot *host)
 {
@@ -143,118 +263,6 @@ void close_all(knot *node)
 
     if(node->fd_UDP)
         close(node->fd_UDP);
-}
-
-//kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
-int find (char message[50], knot *node){
-
-    int key, find_id = -1, source_find_key = -1, fields, i;
-    char command[4] = "",  ip[50] = "", port[10] = "";
-    double d1, d2, d3;
-    char out_message[100];
-
-    fields = sscanf(message, "%s %i %i %i %s %s", command, &key, &find_id, &source_find_key, ip, port);
-
-    printf("command: %s\nkey: %i\nfind id: %i\nsource key: %i\nsource ip: %s\nsource port: %s\n", command, key, find_id, source_find_key, ip, port);
-
-    if (key > 31 || key < 0 || find_id > 99 || find_id < -1 || source_find_key > 31 || source_find_key < -1){
-        printf("Erro nos valores do comando\n");
-        return(1);
-    }
-
-    d1 = ((key - node->self_key) + 32) % 32;
-    printf("d1: %lf\n", d1);
-    d2 = ((key - node->succ_key) + 32) % 32;
-    printf("d2: %lf\n", d2);
-    d3 = ((key - node->short_key) + 32) % 32;
-    printf("d3: %lf\n", d3);
-
-    if (fields == 2 && !strcmp("EFND",command)){ /*EFND*/
-
-        if(key - node->succ_key == 1){
-            printf("A chave esta logo a seguir ao sucessor\n");
-            snprintf(out_message, sizeof (out_message), "EPRED %i %s %s", node->succ_key, node->succ_IP, node->succ_Port);/*pred e o sucessor*/
-            printf("%s", out_message);
-            /*mensagem EPRED como o sucessor sendo o predecessor - UDP*/
-            return (0);
-        }
-
-        if (d1 < d2 && d1 < d3){
-            snprintf(out_message, sizeof (out_message), "EPRED %i %s %s", key, node->self_IP, node->self_Port);
-            printf("%s", out_message);
-            /*mensagem EPRED como o proprio sendo o predecessor - UDP*/
-        }else if(d3 < d1 && d3 < d2){
-
-            for (i=0; find_id != -1; i++){ //gerar e gravar find id para quando voltar a resposta
-                if (node->seq[i] == 0){
-                    node->seq[i] = 1;
-                    find_id = i;
-                }
-            }
-            snprintf(out_message, sizeof (out_message), "FND %i %i %i %s %s", key, find_id, node->self_key, node->self_IP, node-> self_Port);
-            printf("%s", out_message);
-            /*mensagem FND para o atalho - UDP*/
-        }else {
-            for (i=0; find_id != -1; i++){ //gerar e gravar find id para quando voltar a resposta
-                if (node->seq[i] == 0){
-                    node->seq[i] = 1;
-                    find_id = i;
-                }
-            }
-            snprintf(out_message, sizeof (out_message), "FND %i %i %i %s %s\n", key, find_id, node->self_key, node->self_IP, node-> self_Port); /*mensagem FND para o no sucessor - TCP*/
-            printf("%s", out_message);
-            write_tcp(&node->fd_succ, out_message);
-        }
-
-    }else if (fields == 6 && !strcmp("FND",command) && find_id != -1 && source_find_key != -1){ /*Find normal*/
-
-        if (d1 < d2 && d1 < d3) {
-            // nao inicializou a pesquisa n precisa de gravar find id
-            snprintf(out_message, sizeof (out_message), "RSP %i %i %i %s %s\n", source_find_key, find_id, node->self_key, node->self_IP, node->self_Port); /*mensagem RSP para a mesma funcao*/
-            printf("%s\n", out_message);
-            find(out_message, node);
-
-        }else if(d3 < d1 && d3 < d2){
-            // nao inicializou a pesquisa n precisa de gravar find id
-            snprintf(out_message, sizeof (out_message), "FND %i %i %i %s %s", key, find_id, source_find_key, ip, port); /*mensagem FND para o atalho - UDP*/
-            printf("%s", out_message);
-        }else {
-            // nao inicializou a pesquisa n precisa de gravar find id
-            snprintf(out_message, sizeof (out_message), "FND %i %i %i %s %s\n", key, find_id, source_find_key, ip, port); /*mensagem FND para o no sucessor - TCP*/
-            printf("%s", out_message);
-            write_tcp(&node->fd_succ, out_message);
-        }
-
-    }else if (fields == 6 && !strcmp("RSP",command) && find_id != -1 && source_find_key != -1){ /*Resposta do find*/
-
-        if (d1 < d2 && d1 < d3) {
-            if (key != node->self_key){
-                printf("No que gerou procura saiu");
-                return(1);
-            }
-            // no que coresponde ao find id bentry ou find?
-            if (node->seq[find_id] == 2){
-                (printf("Chave x: no %i (ip:%s port:%s)", source_find_key, ip, port)); /*mensagem de resposta na interface e fecha conexao*/
-            }else if (node->seq[find_id] == 1){
-                snprintf(out_message, sizeof (out_message), "EPRED %i %s %s", key, ip, port);
-            }else printf("nao e find nem bentry");
-
-        }else if(d3 < d1 && d3 < d2){
-            // nao inicializou a pesquisa n precisa de gravar find id
-            snprintf(out_message, sizeof (out_message), "RSP %i %i %i %s %s", key, find_id, source_find_key, ip, port); /*mensagem RSP para o atalho - UDP*/
-            printf("%s", out_message);
-        }else {
-            // nao inicializou a pesquisa n precisa de gravar find id
-            snprintf(out_message, sizeof (out_message), "RSP %i %i %i %s %s\n", key, find_id, source_find_key, ip, port); /*mensagem RSP para o no sucessor - TCP*/
-            printf("%s", out_message);
-            write_tcp(&node->fd_succ, out_message);
-        }
-
-    }else{
-        printf("Erro no numero de argumentos do comando ou numero do id ou source_key");
-        return(1);
-    }
-    return(0);
 }
 
 void msg_create(char *msg, char mode[5], knot *node)
@@ -557,12 +565,14 @@ void msg_handle(char *msg, knot *node)
 
     }
     //kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk
-    else if(!strcmp("FIND", strtok(buffer, " "))){
+    else if(!strcmp("FND", strtok(buffer, " "))){
+        //printf("mensagem: %s\n",msg);
+        if (find(msg, node) == 1) printf("Erro na funcao find\n");
+    }
 
-        char retmsg[MAX_MESSAGE_LENGTH];
-        msg_create(retmsg, "FIND", node);
-
-
+    else if(!strcmp("RSP", strtok(buffer, " "))){
+        //printf("mensagem: %s\n",msg);
+        if (find(msg, node) == 1) printf("Erro na funcao find\n");
     }
 
     else if(!strcmp("LEAVE", strtok(buffer, " ")))

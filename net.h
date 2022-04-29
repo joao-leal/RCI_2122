@@ -8,7 +8,7 @@
 
 int new_udp(char *);
 void read_udp(int *, char *);
-void send_udp(int *, char *);
+void write_udp(int *, char *);
 int listen_tcp(char *);
 int connect_tcp(char *, char*);
 int accept_tcp(int *);

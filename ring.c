@@ -13,6 +13,7 @@ int main(int argc, char * argv[])
     memset(&node, 0, sizeof(knot));
     node.pred_key = -1;
     node.succ_key = -1;
+    node.short_key = -1;
     node.fd_aux = -1;
     node.fd_pred = -1;
     node.fd_succ = -1;
@@ -119,6 +120,12 @@ int main(int argc, char * argv[])
             {
                 show(&node);
             }
+
+            else if(!strcmp("find", command) || !strcmp("f", command))
+            {
+                msg_create(input, "FIND", &node);
+            }
+
             else if(!strcmp("leave", command) || !strcmp("l", command))
             {
                 msg_handle("LEAVE", &node);
@@ -126,7 +133,7 @@ int main(int argc, char * argv[])
                 sleep(2);
                 close_tcp(&node.fd_pred);
                 node.fd_pred = -1;
-                
+
                 close_tcp(&node.fd_succ);
                 node.fd_succ = -1;
 
